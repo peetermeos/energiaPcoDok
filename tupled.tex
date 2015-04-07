@@ -1,0 +1,34 @@
+\begin{table}
+\begin{tabular}{l l l}
+Sümbol & Kirjeldus & Vaste koodis\\
+\hline
+% Aja tupled
+$\langle \sigma, h \rangle$ & Sloti numbri $\sigma$ ja kalendritundide $h$ sidumine & \texttt{slot\_hours} \\
+$\langle \chi, \kappa \rangle$ & Kvartalisse $\chi$ kuuluvad kuud $\kappa$ & \texttt{q\_months} \\
+$\langle i, A, \kappa \rangle$& Mudeli ajaühiku $i$, kalendriaasta $A$ ja kuu $\kappa$ sidumine& \texttt{day\_cal} \\
+$\langle d, i \rangle$& Kuupäevanumbri $d$ ja mudeli ajaühiku $i$ sidumine & \texttt{date\_cal} \\
+$\langle \phi, i \rangle$& Mudeli aja $i$ ja kalendri ajajärjestuse (päevades)$\phi$ sidumine & \texttt{cal\_t} \\
+$\langle i, \nu, k \rangle$& Tööpäevad: mudeli aja $i$, nädalapäeva $\nu$ ja kaevanduse $k$ sidumine & \texttt{k\_works} \\
+
+% Kaevanduste tupled
+$\langle k, e \rangle$      & Lubatud kütuse ja kaevanduse kombinatsioonid & \texttt{fs\_k} \\ 
+$\langle k, e \rangle$      & Kaevanduse $k$ poolt tegelikult kaevandatav kütus $e$ & \texttt{k\_mines} \\ 
+
+% Ladude tupled
+$\langle L_a, L \rangle$    & Ladude laiendusi üheks laoks ühendav tuple & \texttt{storage\_tuple}\\
+$\langle k, L_k \rangle$    & Kaevanduse $k$ ja lao $s_k$ sidumine  & \texttt{mine\_storage}\\
+$\langle L_t, t \rangle$    & Tootmisüksuse $t$ ja lao $s_t$ sidumine  & \texttt{prod\_storage}\\
+$\langle k, e, L \rangle$   & Kütuse ($k,e$) keelamine laos $L$  & \texttt{no\_storage}\\
+$\langle \rho, L_k \rangle$ & Kaevanduse lao $s_k$ laadimispunkt liinile $\rho$  & \texttt{k\_dp\_storage}\\
+$\langle \rho, k, l \rangle$& Kaevanduse $k$ ja laadimispunkti $l$ seos liiniga $\rho$  & \texttt{route\_endpoint}\\
+$\langle l, t \rangle$      & Laadimispunkti $l$ seos tootmisüksusega $t$& \texttt{t\_dp\_prod}\\                       
+$\langle l, L_t \rangle$    & Laadimispunkti $l$ seos laoga $s_t$ & \texttt{t\_dp\_storage}\\
+$\langle \rho, e \rangle$   & Lubatud primaarenergia $e$ ja liini $\rho$ kombinatsioonid & \texttt{log\_f\_constraint}\\
+
+% Tootmise tupled
+$\langle d, t \rangle$      & Tootmistehnoloogiate $d$ ja tootmisüksuste $t$ seosed & \texttt{t\_tech}\\
+$\langle t_w, t \rangle$    & Korstnate $t_w$ ja tootmisüksuste $t$ vahelised seosed & \texttt{t\_unit\_stack}\\
+&&
+\end{tabular}
+\caption{Optimeerimismudelit kirjeldavad tupled \label{tab:tupled}}
+\end{table}

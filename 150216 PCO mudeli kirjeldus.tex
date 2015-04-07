@@ -1,0 +1,1386 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[estonian]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{makeidx}
+\usepackage{pdflscape}
+\usepackage{longtable}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+
+\author{Peeter Meos\\Taaniel Uleksin}
+\title{Põlevkivi väärtusketi optimeerimismudel \\ 
+PCO Versioon 1.5\\
+Eesti Energia AS}
+\makeindex
+\begin{document}
+\maketitle
+\tableofcontents
+\listoffigures
+\listoftables
+
+\section{Sissejuhatus}
+Suures plaanis on selle käesoleva kirjatüki ülesanne panna kirja ENK põ\-lev\-kivi väärtusketi optimeerimismudeli matemaatiline formulatsioon. See tekst ei käsitle ülesande lahendusalgoritme ning meetodeid vaid sisuliselt kirjeldab vaid põlev\-kivi väärtusketi muutuvkasumi maksimeerimisülesande sihifunktsiooni, pii\-ranguid ja muutujaid. Kõigepealt kirjeldame standardset väärtusketi pla\-neeri\-mis\-ülesannet.Üles\-ande laiendused või kujumuudatused, mis arvu\-tavad väl\-ja elek\-tri\-turule pakkumiste tegemise optimaalseid marginaale, primaarenergia hankimise nõudlus\-kõveraid või primaar\-energia müügi pakkumiskõveraid ja riski, on kajastatud peatükis \ref{sec:lisad}. Lisaks sellele kirjeldame peatükis \ref{sec:jareltootlus} mudeli väljundi pealt lõpp\-kasutaja vaadete arvutamist.
+
+\subsection{Terminid ja notatsioon}
+Kuna PCOs on palju hulki, parameetreid, muutujaid ja tuplesid läbisegi, siis  järgnev peatükk kirjeldab lühidalt siin tekstis kasutatud fontide ja terminite tähendust. Dokumentatsiooni mõte on ära seletada PCO matemaatika (võrran\-did ja võrratused) ning siduda ära see reaalse koodiga. Kõik koodi väljavõtted on tehtud sellise \texttt{trükimasina fondiga}. Matemaatika jaoks on kasutatud järgmisi fonte:
+\begin{itemize}
+\item Hulgad on kirjeldatud kalligraafilise fondi ja suure tähega nagu näiteks järgmine hulk $\mathcal{W}$. Hulkade elemendid on väikeste tähtede ja hariliku fondiga: $w \in \mathcal{W}$
+\item Optimeerimisülesande muutujad on tähistatud hariliku suure tähega ja indekseeritud hulkade elementidega $R(i,j,k)$
+\item Ülesande parameetrid (ehk siis numbrilised sisendid) on tähistatud kursiivis suure tähega $\mathit{B}$ ja indekseeritud.
+\item Tupled (ehk mitme hulga vahelised seosed ja lõiked) on tähistatud kolmnurksete sulgudega, näiteks $\langle k, e \rangle$.
+\item Juhul kui on vaja viidata mingile üleüldisele hulgale, nagu näiteks täis\-arvud või positiivsed reaalarvud, siis on see tehtud tahvlifondiga: näiteks $\mathbb{Z}^+$ tähistab positiivseid täisarve.
+\end{itemize}
+Kuna kõikvõimalikke sümboleid on hästi palju, siis nende tähendused, ühikud ja vasted koodis on ära toodud tabelites \ref{tab:hulgad}, \ref{tab:tupled}, \ref{tab:t_muutujad} ja \ref{tab:para}. Ilmselt on seda kõike kergem lugeda mitte arvutist vaid paberi pealt, tabelid sümbolitega tähendustega käeulatuses.
+Kui tekstis tuleb ette ingliskeelseid termineid, mida ma ei ole osanud korralikult eesti keelde ümber panna või nad on ingliskeelsena lihtsalt selgemad, siis on need kirjutatud kursiivis, näiteks \emph{Bender's decomposition}.
+
+\section{Eeldused}
+\section{Mudeli üldine arhitektuur}
+Üldises vaates koosneb optimeerimismudel ühest suurest sihifunktsioonist ja piirangutest. Sihifunktsioon on lineaarne sisaldab endas iga optimeeritava ajaperioodi (üldiselt 1 päev) muutuvkasumite summat\footnote{Muutuvkasum terminina on ebastandardne ning ilmselt kasutuses ainult Eesti Energias. Muutuvkasum on sisuliselt müügitulud, millest on muutuvkulud maha lahutatud. Muutuvkasum ei arvesta püsikulude, kulumi ja kapitalikulude mõjuga.}. Piirangud on samuti lineaarsed. Nii sihifunktsiooni kui ka piirangute puhul saab optimeeritavat väärtusketti jagada jämedalt kolmeks järjestikuseks elemendiks:
+
+\begin{itemize}
+\item primaarenergia kaevandamine, rikastamine ja hankimine
+\item logistika ja laod
+\item sekundaarenergia tootmine 
+\item sekundaarenergia müük
+\end{itemize}
+
+Esimesed kolm elementi ülaltoodud nimistus on kulusid kirjeldavad otsustusmuutujad ning viimane, müügi komponent kirjeldab tulusid. Lisaks sellele on mudelis veel üldiseid elemente, mida kasutavad kõik kolm ülaltoodud valdkonda. Sellisteks on näiteks kalendriaja arvestus optimeerimismudeli ajaperioodideks ja muutuvkasumi diskonteerimine nüüdisväärtuseks.
+
+Optimeerimismudelit on võimalik kasutada erinevates seadetes, lülitades välja võimekusi või lisades kütuseid. Selline seadete sättimine on tehtud sisuliselt vastavate piirangute sisse- või väljalülitamisega optimeerimisülesande võrrandi\-süsteemi. Nende lülitamise mehhaanika on pigem infotehnoloogiline ülesanne ja jääb selle kirjatüki skoobist välja. Ülevaate saamiseks mudeli kasutamise kohta, loe mudeli kasutusjuhendit, mis peaks olema üleva Energiakaubanduse Wikis.
+
+Formulatsioon on jaotatud GAMS koodifailide vahele, eraldades eel- ja järel\-töötluse, struktuurid, sihifunktsiooni, piirangud ja lisaalgoritmid. Failid ja nende sisu on kirjeldatud tabelis lisas \ref{app:failid}. Koodi loetavuse ja lühiduse huvides on võimalikult palju korduvaid koodielemente kirjutatud makrodeks mis on ära toodud selle kirjatüki lisas \ref{app:makrod}
+
+\section{Üldised elemendid}
+\subsection{Aeg ja kalender}
+Mudel töötab praegu suuremas osas päeva täpsusega mudelina.
+
+Kaevandamine, logistika, õli tootmine ja tükikivi müük on modelleeritud päevase resolutsiooniga. Kuna elektri hind muutub päeva sees oluliselt, siis on võimalik elektri tootmist modelleerida maksimaalselt ühe tunni täpsusega, kuid see lisaks mudelile liigset keerukust. Üldiselt on annab ilmselt elektri  päevasiseselt \emph{peak} ja \emph{off-peak} vormis modelleerimine piisava täpsuse. Nüüd ja edas\-pidi tähistab indeks $i$ vastavat ajaperioodi, mis harilikult on üks päev, elektritoomise juures aga üks slott (ehk siis kas üks päev või peenemas vormingus \emph{peak} või \emph{off-peak}).
+Ülalmainitud väite juures on üks erand - mudeli viimane versioon võimaldab kasutada väikseima ajaühikuna  ühte kuud, mis on jagatud kolmeks slotiks (\emph{peak}, \emph{off-peak} ja \emph{weekend}). Sellises mudeli seades on ka kaevandamine, logistika ja õli tootmine kuu resolutsiooniga ning elektri tootmine siis vastava sloti täpsusega. Kuna sellisel juhul ei ole slotid kuu sees alati ranges ajalises järjestuses, toob selline mudeli seadistus kaasa mõningaid iseärasusi, mis on kirjeldatud peatükus \ref{sec:lisad}. Kuna mudelis on vaja siduda mudeli ajaühik $i$ kalendriajaga (aasta $A$ ja kuu $\kappa$ muutuvkulude, tarnekoguste ja turuhindade jaoks), siis mudelis on selle seose jaoks tuple $cal(i, A, \kappa)$ koodis \texttt{date\_cal(time\_t, year, month)} või makro kaudu lühidalt \texttt{y\_m\_t}. Kõik tupled on kirjeldatud tabelis \ref{tab:tupled}.
+
+\subsection{Diskonteerimine}
+Selleks, et väärtustada lähituleviku muutuvkasumit enam kui tuleviku muutuvkasumit\footnote{Varblane käes ja tuvi katusel}, on mudelis võimalus vastavalt etteantud aastasele intressimäärale\footnote{ehk siis WACC, \emph{Weighted Average Cost of Capital}} $r$ tuua tulevikuperioodide muutuvkasumid $K_i$ tänasesse päeva vastavalt järgnevale valemile, millega me korrutame läbi sihifunktsiooni elemendid.
+\begin{equation}
+K_{tot} = \sum_i \frac{K_i}{\prod_{j=1}^i(1+r)/365}
+\end{equation}
+Kuna algsed ajaperioodide muutuvkasumid on jätkuvalt muutujates $K_i$, siis on hilisem kuiste ja aastaste muutuvkasumite summeerimine ilma diskonteerimist arvestamata jätkuvalt lihtsalt tehtav.
+Koodis on see sihifunktsiooni element toodud järgnevalt:
+\begin{verbatim}
+/ prod((time_t2, year, month)$(date_cal(time_t2, year, month)
+                           and ord(time_t2) le ord(time_t)),
+      (1 + wacc/365))
+\end{verbatim}
+
+\subsection{Hulgad ja otsustusmuutujad koos tähistustega}
+Järgnev tabel üritab anda ülevaadet siin kirjelduses kasutatavast notatsioonist. Kuna muutujaid ja parameetreid on suhteliselt palju, siis võib vabalt juhtuda, erinevates kontekstides me kasutame sama tähist erineva sisuga. Primaarenergia kaevandmise, hankimise ja logistika muutujad on ära toodud tabelis \ref{tab:k_muutujad} ning sekundaarenergia otsustusmuutujad on tabelis \ref{tab:t_muutujad}.
+
+\include{hulgad}
+\include{tupled}
+\include{muutujad}
+
+Tähelepanelik lugeja kindlasti märkab, et muutujate nimekirjas ei ole eraldi välja toodud heitmeid ja eriheitmeid. See on selletõttu, et mõlemad neist on ilmutatud kujul välja arvutatavad tootmisüksustesse $t$ ajahetkedel $i$ sisenenud primaarenergia $e$ kaudu ning ei vaja seega eraldi muutujaga kajastamist. Muutujad tähistavad alati otsustuspunkte (nt. kui palju plokki koormata, kas lisada killustikku, kui palju kaevandatud energiast liinile saata ja kui palju ladustada). Heitmed on tootmisüksuste koormamise ebameeldiv kõrvalmõju ning mudel käsitleb neid sellena.
+
+\section{Primaarenergia kaevandamine ja hankimine}
+
+Käesoleva peatüki eesmärk on kirjeldada, kuidas ENKi põlevkivi väärtusah\-ela optimeerimismudel käsitleb kaevandusi ja karjääre ning millise loogika alusel valib mudeli parima tootmisstrateegia.
+
+Üldises vaates maksimeerib alati mudel väärtusketi muutuvkasumit. See ei ole üks-üheselt üle toodav kaevandatava mäemassi tonnidesse või MWh, kuna toodete erinevate kütteväärtuste ja keemilise koosseisu  tõttu on kogu väärtusketi vaates erineva kaevanduste toodete muutuvkulud per MWh primaarenergiat erinevad.
+
+Nii kaevandused kui karjäärid kaevandavad mäemassi, millele sätib mudel ülemise päevase võimekuse. Näiteks suudab Estonia kaevandus kaevandada päe\-vas jämedalt 50,000 tonni mäemassi. Estonia kaevandus töötab kuus päeva nädalas ja Narva karjäär töötab viis päeva nädalas. Mudel arvestab riigipühi, nii kalendris kindlamääratud kuupäevadele langevaid kui ka liikuvaid pühi. Kuna mudel oma harilikus seades töötab kaevandamise ja primaarenegia hankimise vaates päevapõhiselt, siis jagab mudel eeltöötluses kuise etteantud kaevevõimekuse $\mathit{M}_{max}$ tööpäevadega antud kaevanduses ning antud kuus. Liigaastad on arvesse võetud.
+
+Primaarenergia väline ost (näiteks Kiviõli Keemiatööstuselt) on modelleeritud nagu üks fiktiivne karjäär. Ainsa erisusena KKTga sõlmitud lepingu iseära\-suse tõttu, on KKT kütuse hankele seatud kuine kütuse minimaalse tarne piirang. 
+
+Olles välja kaevandanud parima koguse mäemassi, läheb karjääride ja kaevanduse protsess siinkohal lahku.
+
+\subsection{Sihifunktsioon}
+Kaevandamise sihifunktsioon koosneb sisuliselt vaid kaevandamise muutuvkulu komponendist, mis on läbi korrutatud kaevandatud kütuse hulgaga. Sellele lisandub GV kütuse komponent, mis on analoogselt kaevandatud kütuse komponendiga korrutis lepingulise hinna ja kasutatud lepingu mahu korrutisega. Nagu alljärgnevast võrratusest \ref{obj_k2} on näha, eristab mudel hankekütust harilikust kaevandusest ja karjäärist. Mudel on sellisena ehitatud kaheastmelise stohhastilise optimeerimise võimalust arvestades, kus esimeses faasis otsustatakse ära perioodi kaevemahud omaenda kaevandustes jättes GV kütuse hankemahud varieeruma. Lisaks sellele pane tähele, et kuna hankelepingute hind on antud ENKPRIM poolt MWh kütuse kohta ning muud muutuvkulud on ühikuga EUR/t, siis on vajalik hankelepingute hinda teisendada kütteväärtusega läbi korrutamise näol.
+
+\begin{align}
+&\sum_{A,k,e_1,e_2} VC^{fs}_{k, e, A} M^k_{k,i,e_1, e_2} \cdot c_e(e1, e2)  \forall i \in A \land \forall e_1, e_2 : c_e(e_1, e_2)>0 \land k \neq \texttt{Hange } \label{obj_k1} \\
+&\sum_{A,k,e} VC^{fs}_{k, e, A} M^h_{i,e_1}  \forall i \in A \land \forall e_1 \land k = \texttt{Hange } \label{obj_k2}\\
+&\sum_{c, k, e, A, \kappa} VC^{contr}_{c, A, \kappa, k, e} M^p_{c,i,e} V^{MWh}_{k,e}  \forall i \in \{A, \kappa\} \label{obj_k3}
+\end{align}
+
+Need kolm sihifunktsiooni elementi on koodis kirjeldatud järgnevalt.
+\begin{verbatim}
+  -
+ sum((year, month, feedstock, k)$(y_m_t
+                             and fs_k(k, feedstock)
+                             and not sameas(k, "Hange")),
+     sum(p2$(enrichment_coef(p2, k, feedstock) > 0) ,
+      fs_mined(time_t, p2, feedstock, k))
+    * fs_vc(k, feedstock, year))
+ -
+ sum((year, month, feedstock)$(y_m_t and fs_k("Hange", feedstock)),
+     fs_acqd(time_t, feedstock) * fs_vc("Hange", feedstock, year))
+
+ -
+ sum((serial, k, feedstock),
+    fs_purchase(serial, time_t, k, feedstock)
+    * sum((year, month)$y_m_t, contract(serial, year, month, 
+                                        k, feedstock, "hind"))
+    * cv(feedstock, k, "MWh")
+  )
+\end{verbatim}
+
+\subsection{Karjäärid}
+% Siia lisada muutuvkulude arvutamise kirjeldus
+Karjäärides, kus ei ole rikastusvabrikut, ütleb mudel, et 1 tonnist 7.0 MJ/kg mäemassist on võimalik toota 770 kg 8.4 MJ/kg kütteväärtusega energeetilist põlevkivi (st. koefitsent 0.77) ja/või 885 kg 7.7 MJ/kg madala kütteväärtusega toodet või 1 tonn 7.0 MJ/kg mäemassi. Ülejäänu loeme aheraineks ja ignoreerime seda kui mitte-tootestatavat materjali. Selgituseks vaata joonist \ref{joon1}.
+
+\begin{figure}
+\include{karjaari_pilt}
+\caption{Mäemassi tootestamine karjääris
+\label{joon1}}
+\end{figure}
+
+Seega väljaminevate toodete kogus tonnides peab kokku summeeruma järgne\-valt
+
+\begin{equation}
+\sum_{tooted} \frac{kogus_{toode} [t]}{koefitsent_{toode} [\%]} \le kaeve_{max} [t]
+\end{equation}
+
+See võrratus peab paika pidama igal planeeritaval päeval. Ülalmainitud koefitsenti tähistatakse siinses kirjelduses $\mathit{\alpha}_e$ ning koodis \texttt{enrichment\_coef}.
+
+\subsection{Kaevandused}
+% Siia tuleb nagu karjäärilgi lisada muutuvkulude arvutus
+Estonia kaevanduses tuleb vastandina karjäärile modelleerida rikastusvabrikut. Rikastusvabriku protsess on modelleeritud mudelis kahe sammuna. Kõigepealt jagab mudel kaevandatud mäemassi kolmeks: aheraine, sõelis ja kontsentraat. Aherainet on mäemassis 42\% per tonn ($\mathit{\alpha_a}$), kontsentraati on mäemassis 23\% per mäemassi tonn ($\mathit{\alpha_k}$) ning kõik ülejäänu (35\% $\mathit{\alpha_s}$ mäemassi tonnist) moodustab sõelis. Nendest kolmest komponendist kombineerime kokku tooted. Selgituseks vaata joonist \ref{joon2}.
+
+Seega iga päev peavad paika pidama võrratused, mis ütlevad, et nende kolme komponendi kasutamine protsessis peab mahtuma päevase kaevandatud mäemassi sisse:
+
+\begin{align}
+\sum_e R^a_{i,e} &\le \mathit{\alpha_a} \cdot M_{i,k} & \forall i \\
+\sum_e R^k_{i,e} &\le \mathit{\alpha_k} \cdot M_{i,k} & \forall i \\
+\sum_e R^s_{i,e} &\le \mathit{\alpha_s}  \cdot M_{i,k} & \forall i  
+\end{align}
+\begin{verbatim}
+v_tailings_sum(time_t, k)$(time_t_s(time_t) and k_enrichment(k))..
+sum(feedstock$fs_k(k, feedstock), tailings_p(time_t, k, feedstock))
+=l= tailings_pct(k) * raw_shale(time_t, k);
+
+v_sieve_sum(time_t, k)$(time_t_s(time_t) and k_enrichment(k))..
+sum(feedstock$fs_k(k, feedstock), sieve_p(time_t, k, feedstock))
+=l= sieve_pct(k) * raw_shale(time_t, k);
+
+v_concentrate_sum(time_t, k)$(time_t_s(time_t) and k_enrichment(k))..
+sum(feedstock$fs_k(k, feedstock), cont_p(time_t, k, feedstock))
+=l= cont_pct(k) * raw_shale(time_t, k);
+\end{verbatim}
+
+\begin{figure}
+\include{kaevanduse_pilt}
+\caption{Mäemassi tootestamine Estonia kaevanduses
+\label{joon2}}
+\end{figure}
+
+
+Kontsentraat ja sõelis summeeruvad nii energeetiliselt kui ma koguseliselt kokku kaubapõlevkiviks, mida on 58\% kaevandatavast mäemassist. Nendest kolmest komponendist paneme kokku kaevandusest välja minevad tooted. Toodete massid ja primaarenergia kogused peavad kokku summeeruma komponentide massidest ja primaarenergia kogustest. VKGle tehtav tükikivi tarne näiteks sisaldab selletõttu ainult kontsentraati, kuna nõutava toote kütteväärtust saab seda ainult kontsetraadist kokku segades, teise komponentide osakaalud on nullid. Seega on meil iga kaevandusest välja mineva toote jaoks olemas sellised võrratused välja mineva toote ja selle segamiseks vajalike komponentide kohta:
+
+\begin{align}
+toode [t] & = R^a_{i,e} + R^k_{i,e} + R^s_{i,e} \nonumber \\
+\frac{\mathit{V}_{MWh, toode} [MJ/kg]}{3.6} \cdot toode [t] & = \frac{1.511 [MJ/kg]}{3.6}\cdot R^a_{i,e}  \nonumber \\
+&+ \frac{11.32 [MJ/kg]}{3.6} \cdot R^k_{i,e} \nonumber \\ 
+&+ \frac{6.459 [MJ/kg]}{3.6} \cdot R^s_{i,e}
+\end{align}
+
+$kv_{toode}$ tähistab tarnitava primaarenergia toote kütteväärtust [MJ/kg].
+
+\begin{verbatim}
+
+v_enrichment1(time_t, k, feedstock)$(time_t_s(time_t)
+                                 and fs_k(k, feedstock) and k_enrichment(k))..
+  cv(feedstock, k, "MWh")  * fs_mined(time_t, "Kaevis", feedstock, k)
+  =e=
+  cv("Tykikivi", k, "MWh") * cont_p(time_t, k, feedstock)
+    +
+  cv("Aheraine", k, "MWh") * tailings_p(time_t, k, feedstock)
+    +
+  sieve_cv(k) * sieve_p(time_t, k, feedstock)
+;
+
+v_enrichment2(time_t, k, feedstock)$(time_t_s(time_t)
+                                 and fs_k(k, feedstock) and k_enrichment(k))..
+fs_mined(time_t, "Kaevis", feedstock, k)
+=e=
+sieve_p(time_t, k, feedstock)
+ + cont_p(time_t, k, feedstock)
+ + tailings_p(time_t, k, feedstock)
+;
+\end{verbatim}
+
+\subsection{Ühendus logistikaga}
+Mudeli logistika käsitlus on kaetud eraldi tekstina. Lühikirjeldusena öeldes on kaevandusest või karjäärust tuleval primaarenergia tootel kaks varianti, kas seda ladustatakse või saadetakse logistikaliinile. Logistikaliin võib olla nii raudtee, konveier kui ka autotransport. Laod ja logistika töötavad päeva täpsusega.
+
+\begin{align}
+\sum_{l_k} F^{lattu}_{e,i,l_k} + \sum_{\rho} F^{logistikasse}_{e,i,\rho} &< \mathit{\alpha}_e(e', k, e) M^k_{k,i,e', e} & \forall i,e,e',k \\
+\sum_{\rho} F^{logistikasse}_{e,i,\rho} &< M^h_{i,e} & \forall i,e 
+\end{align}
+
+Ülaltoodud võrrandis tähistab $c_e(e', e)$ rikastuskoefitsenti, millega mudel arvutab kaevandatava primaarenergia $e'$ tootestatavasse primaarenergiasse $e$. Hankekütusel on selle väärtus $1.0$ ning seega võib see võrratusest välja jääda. Logistikale jaotatakse nii kaevandustest ja karjääridest kaevandatud kütus kui ka GV hankega saadud kütus. NB! Benderi tükelduse puhul on vajalik hoida kaevemahud üle simulatsioonide konstantsed (st. Benderi esimene faas). Selletõttu on vaja siin sisuliselt kahte erinevat piirangu konfiguratsiooni \emph{Benders' decompositioni} ja hariliku deterministliku planeerimise jaoks. Vaata täpsemalt peatükki \ref{sec:stoch_bender}.
+\begin{verbatim}
+v_mining_dist(time_t, feedstock, k)$(time_t_s(time_t)
+                                           and fs_k(k, feedstock)
+                                           and not sameas(k, "Hange"))..
+  sum((s_k)$(mine_storage(k, s_k)
+         and fs_k(k, feedstock)
+         and not no_storage(k, feedstock, s_k)),
+         mine_to_storage(time_t, s_k, k, feedstock))
+   +
+   sum((route, l)
+      $(route_endpoint(route, k, l) and fs_k(k, feedstock)),
+          mine_to_logs(time_t, route, feedstock))
+
+  =l=
+* Without Bender's decomposition
+  (1 - bender) *
+  sum(p2$k_mines(k, p2), fs_mined(time_t, p2, feedstock, k)
+                  * enrichment_coef(p2, k, feedstock))$(not sameas(k, "Hange"))
+  +
+* With Bender's decomposition
+  (bender) *
+  sum(p2$k_mines(k, p2), fs_mined.l(time_t, p2, feedstock, k)
+                  * enrichment_coef(p2, k, feedstock))$(not sameas(k, "Hange"))
+;
+\end{verbatim}
+
+\begin{verbatim}
+v_aquisition_dist(time_t, feedstock)$time_t_s(time_t)..
+  sum((s_k)$(mine_storage("Hange", s_k)
+         and fs_k("Hange", feedstock)
+         and not no_storage("Hange", feedstock, s_k)),
+         mine_to_storage(time_t, s_k, "Hange", feedstock))
+   +
+   sum((route, l)
+     $(route_endpoint(route, "Hange", l) and fs_k("Hange", feedstock)),
+          mine_to_logs(time_t, route, feedstock))
+
+  =l=
+  fs_acqd(time_t, feedstock)
+;
+\end{verbatim}
+
+
+\section{Logistikaliinid ja laod}
+Selle peatüki eesmärk on kirjeldada põlevkivi väärtusahela logistikasüsteemi formulatsiooni ENKi väärtusahela optimeerimismudelis. Sisuliselt on tegemist ladude ja logistika tasakaaluvõrranditega. Parema koha puudumisel oleme siia lisanud ka tükikivi tarne kirjelduse VKGle. Kütuse etteanne, mis on osaliselt ka logistikat puudutav väärtusketi element, on kajastatud tootmise kirjelduses.
+
+\subsection{Sihifunktsioon}
+Sihifunktsioonis on kajastatud logistika kahes elemendis, logistikakulud logistikaliinidel ja laost sisse- ning väljavõtmiskulud. Kuna laod kujutavad endast sisuliselt hunnikuid põlevkivi, siis toodete ladustamise praeguses mudelis kajastada ei ole vajalik - reaaleluliselt seda lihtsalt ei eksisteeri.
+
+\begin{align}
+\sum_{liin} \bigg[\sum_e \bigg( F^{logistikasse}_{e,i,liin} + F^{laost}_{e,i,liin} \bigg)\cdot P_{liin} \bigg] &\forall i \label{vls1} \\
+\sum_{e} \bigg[ F^{lattu}_{e,i,l_k} + F^{laost}_{e,i,l_k} \bigg] &\forall i,l_k \label{vls2} \\
+\sum_{e} \bigg[ F^{lattu}_{e,i,l_t} + F^{laost}_{e,i,l_t} \bigg] &\forall i,l_t \label{vls3} 
+\end{align}
+Esimene sihifunktsiooni element \eqref{vls1} kajastab liinide logistika muutuvkulusid per tonn, järgmised \eqref{vls2} ja \eqref{vls3} kajastavad kaevanduste ja tootmisüksuste ladudest väljavõtmise ja ladustamise kulusid.
+
+\begin{verbatim}
+-
+sum((year, month, route, feedstock, k,l)$(
+         y_m_t
+     and route_endpoint(route, k, l)
+     and fs_k(k, feedstock)
+     ),
+     log_vc(route, year) *
+     mine_to_logs(time_t, route, feedstock))
+
+$ifthen.two "%mine_storage%" == "true"
+   -
+sum((year, month, route, feedstock, s_k, k)$(
+         y_m_t
+     and k_dp_storage(route, s_k)
+     and mine_storage(k, s_k)
+     and fs_k(k, feedstock)
+     ),
+     log_vc(route, year) *
+     storage_to_logs(time_t, s_k, route, feedstock)
+     )
+$endif.two
+* Storage costs at mines
+$ifthen.two "%mine_storage%" == "true"
+   -
+sum((year, month, k, s_k, feedstock)$(
+     y_m_t and mine_storage(k, s_k) and fs_k(k, feedstock)
+     ),
+     storage_vc(s_k) * mine_to_storage(time_t, s_k, k, feedstock))
+   -
+sum((year, month, s_k, route, k, feedstock)$(
+         y_m_t
+     and k_dp_storage(route, s_k)
+     and mine_storage(k, s_k) and fs_k(k, feedstock)
+     ),
+     storage_vc(s_k) * storage_to_logs(time_t, s_k, route, feedstock))
+
+$endif.two
+
+* Storage costs at production units
+$ifthen.two "%prod_storage%" == "true"
+-
+sum((year, month, route, s_t, l, k, feedstock)$(
+         y_m_t
+     and route_endpoint(route, k, l)
+     and fs_k(k, feedstock) and t_dp_storage(l, s_t)
+     ),
+     storage_vc(s_t) * logs_to_storage(time_t, route, s_t, feedstock))
+   -
+sum((year, month, s_t, t, k, feedstock)$(
+     y_m_t and fs_k(k, feedstock) and prod_storage(s_t, t)
+     ),
+     storage_vc(s_t) * storage_to_production(time_t, s_t, t, k, feedstock))
+$endif.two
+\end{verbatim}
+
+\subsection{Raudteed, konveierid ja autotransport}
+Logistikaliinide tasakaaluvõrrandid ja liinide mahud on kirjeldatud järgnevate võrranditega. Kuna võrrandid on väga üldised ning ei arvesta näiteks eraldi vagunkoosseisudega, siis sobivad nad suvalise logistikaliini kirjeldamiseks, olgu ta päriseluliselt kas radutee, konveier või autotransport. Kuna selline süsteem ei ole tegelikult piisavalt granulaarne, siis mudeli järgmises versioonis me kirjutame logistika ümber.
+\begin{align}
+F^{logistikasse}_{e,i,\rho} + F^{laost}_{e,i,\rho} =F^{lattu}_{e,i,\rho} + F^{tootmisse}_{e,i,\rho} + R_{e,i,\rho, l_t}  &\forall e, i, \rho \\
+\sum_{e,i} \bigg[ F^{lattu}_{e,i,\rho} + F^{tootmisse}_{e,i,\rho} + R_{e,i,\rho, l_t} \bigg] \leq F^{max}_{liin} &\forall \rho 
+\end{align}
+
+\begin{verbatim}
+v_logistics(time_t, route, feedstock)$time_t_s(time_t)..
+* From mine to logistics
+   sum((k, l)$(route_endpoint(route, k, l) and fs_k(k, feedstock)
+* If the tuple allows to use this combination of fuel and logistics line
+        and (log_f_constraint(route, feedstock)
+* .. or the tuple is not defined at all for given logistics line
+          or sum(p2$log_f_constraint(route, p2), 1) = 0)
+     ),
+      mine_to_logs(time_t, route, feedstock))
+   +
+* From storage to logistics
+    sum((k, s_k, l)$(route_endpoint(route, k, l)
+* If the tuple allows to use this combination of fuel and logistics line
+        and (log_f_constraint(route, feedstock)
+* .. or the tuple is not defined at all for given logistics line
+          or sum(p2$log_f_constraint(route, p2), 1) = 0)
+        ),
+        storage_to_logs(time_t, s_k, route, feedstock)
+        $(mine_storage(k, s_k) and fs_k(k, feedstock)))
+
+   =e=
+* From logistics to storage
+  sum((k, s_t, l)$route_endpoint(route, k, l),
+       logs_to_storage(time_t, route, s_t, feedstock)
+       $(t_dp_storage(l, s_t) and fs_k(k, feedstock)))
+  +
+* From logistics to production
+  sum((k, l, t)$route_endpoint(route, k, l),
+      logs_to_production(time_t, route, t, feedstock)
+      $(t_dp_prod(l, t)
+      and fs_k(k, feedstock)
+      )
+  )
+  +
+* Fuel reserved for non-production uses (such as testing and commissioning)
+   sum((k, l)$(route_endpoint(route, k, l) and fs_k(k, feedstock)),
+     daily_res_f(time_t, k, feedstock, l)
+   )
+;
+v_max_throughput(time_t, l)$(time_t_s(time_t)
+                                   and max_throughput(l) > 0)..
+
+  sum((s_t, route, k, feedstock)$route_endpoint(route, k, l),
+       logs_to_storage(time_t, route, s_t, feedstock)
+       $(t_dp_storage(l, s_t) and
+         fs_k(k, feedstock)))
+  +
+* From logs direct to production
+  sum((route, k, t, feedstock)$route_endpoint(route, k, l),
+      logs_to_production(time_t, route, t, feedstock)
+      $(t_dp_prod(l, t) and fs_k(k, feedstock)))
+  +
+* Fuel reserved for non-production uses (such as testing and commissioning)
+  sum((k, feedstock),
+    daily_res_f(time_t, k, feedstock, l)
+     )
+ =l=
+ max_throughput(l) * days_in_t(time_t)
+;
+\end{verbatim}
+
+Kaevanduste laoseisude ja tasakaalude arvutamine logistika baasil on defineeritud järgnevate võrranditega, kus muutujad $F$ tähistavad vastava superskriptiga kirjeldatud primaarenergia $e$ logistikavoogu ajaperioodil $i$.
+
+\begin{align}
+L_{e,i+1,l_k} &= L_{e,i,l_k} + F^{lattu}_{e,i,l_k} - F^{logistikasse}_{e,i,\rho} & \forall i < max(i) \\
+L_{e,i+1,l_t} &= L_{e,i,l_t} + F^{lattu}_{e,i,l_t} - F^{tootmisse}_{e,i,t} & \forall i < max(i) \\
+L^{end}_{e,l_k} &= L_{e,i,l_k} + F^{lattu}_{e,i,l_k} - F^{logistikasse}_{e,i,\rho} & \forall i = max(i)\\
+L^{end}_{e,l_t} &= L_{e,i,l_t} + F^{lattu}_{e,i,l_t} - F^{tootmisse}_{e,i,t}  & \forall i = max(i)
+\end{align}
+\begin{verbatim}
+
+v_k_storage(time_t, s_k, k, feedstock)
+                 $(time_t_s(time_t)
+              and fs_k(k, feedstock)
+                  )..
+* Storage tomorrow
+   storage_k(time_t + 1, s_k, k ,feedstock)$(ord(time_t) < card(time_t_s))
+   +
+   last_day_storage(s_k, k, feedstock)$(ord(time_t) = card(time_t_s))
+   =e=
+* Storage today
+   storage_k(time_t, s_k, k, feedstock)
+   +
+* Arrival from mining
+  mine_to_storage(time_t, s_k, k, feedstock)$(mine_storage(k, s_k)
+                                                         and fs_k(k, feedstock))
+   -
+* Feedstock entering logistics
+  sum((route, l)$(route_endpoint(route, k, l)
+               and mine_storage(k, s_k)
+               and fs_k(k, feedstock)),
+        storage_to_logs(time_t, s_k, route, feedstock)
+        )
+;
+v_t_storage(time_t, s_t, k, feedstock)
+                        $(time_t_s(time_t)
+                          and fs_k(k, feedstock)
+                          )..
+
+* Storage tomorrow
+  storage_t(time_t+1, s_t, k, feedstock)$(fs_k(k, feedstock) 
+                                     and (ord(time_t) < card(time_t_s)))
+  +
+  last_day_storage(s_t, k, feedstock)$(fs_k(k, feedstock) 
+                                  and (ord(time_t) = card(time_t_s)))
+=e=
+* Storage today
+  storage_t(time_t, s_t, k, feedstock)$(fs_k(k, feedstock))
+  +
+* From logistics to storage
+  sum((route, l)$route_endpoint(route, k, l),
+       logs_to_storage(time_t, route, s_t, feedstock)
+       $t_dp_storage(l, s_t)
+       )
+  -
+* From storage to production
+  sum(t, storage_to_production(time_t, s_t, t, k, feedstock)
+      $(prod_storage(s_t, t) and fs_k(k, feedstock)))
+;
+\end{verbatim}
+Laadimispunktides olevad konveierite ja vagunkaadurite laadimispiirangud avalduvad järgmiselt:
+\begin{align}
+F^{laost}_{e,i,l_k} + F^{logistikasse}_{e,i,liin} &\leq F^{max}_{l_k} &\forall l_k,i\\
+F^{lattu}_{e,i,l_t} + F^{tootmisse}_{e,i,t} &\leq F^{max}_{l_t} &\forall l_t,i
+\end{align}
+
+Nagu on näha ülaltoodud võrranditest, on selline logistika formuleering väga lihtne ja kohati simplistiline. Sellise formulatsiooniga ei ole võimalik kajastada erinevate liinilõikude läbilaskemahte, vagunkoosseisude piiranguid ja vedurite töötunde. Seega on sisuliselt tegemist esimese üldistusega. Täpsemaks modelleerimise arendame me välja järgmises optimeerimismudeli versioonis.
+
+\subsection{Laod}
+% Siia lisada laienduse kirjeldus, kuidas need ühte liidetakse. 
+Ladude miinimumid ja maksimumid on seatud paika järgnevate piiravate võrratustega.
+\begin{align}
+\sum_e L_{e,i,l_k} & \leq L^{max}_{l_k} &\forall i,l_k \\
+\sum_e L_{e,i,l_t} & \leq L^{max}_{l_t} &\forall i,l_t \\
+\sum_e L_{e,i,l_k} & \geq L^{min}_{l_k} &\forall i,l_k \\
+\sum_e L_{e,i,l_t} & \geq L^{min}_{l_t} &\forall i,l_t
+\end{align}
+\begin{verbatim}
+v_max_storage_k(time_t, s_k)$time_t_s(time_t)..
+   sum((feedstock, k), storage_k(time_t, s_k, k, feedstock))
+   =l=
+$ifthen.two "%mine_storage%" == "false"
+   1000
+$else.two
+   max_storage(s_k)
+$endif.two
+;
+
+v_max_storage_t(time_t, s_t)$time_t_s(time_t)..
+  sum((feedstock, k), storage_t(time_t, s_t, k, feedstock))
+  =l=
+  max_storage(s_t)
+;
+v_min_storage(time_t, storage)$time_t_s(time_t)..
+   sum((s_t, feedstock, k)$(sameas(s_t, storage)
+                           ), storage_t(time_t, s_t, k, feedstock))
+   +
+   sum((s_k, feedstock, k)$(sameas(s_k, storage)
+                         ), storage_k(time_t, s_k, k, feedstock))
+   =g=
+   min_storage(storage)
+;
+\end{verbatim}
+
+\subsection{VKG tarne}
+Kuna tükikivi tarne Viru Keemia Grupile ei sobi otseselt ei tootmise, kaevandamise ega logistika alla, siis suhteliselt meelevaldselt kirjeldame me tükikivi müüki logistika peatükis, kuna peale logistika seal mingit matemaatilist keerukust ei ole. Müük ise on sihifunktsioonis kajastatud nagu muudki elemendid, ajaperioodi $i$ (harilikult üks päev) täpsusega järgnevalt:
+
+\begin{equation}
+\sum_{t,i,e} P_{e} \cdot S_{t,i,e} \qquad \forall t,e,i
+\end{equation}
+
+Indeks $t$ tähistab üksust, millele me müüme. Praeguses formulatsioonis one neid ainult üks - VKG, aga mudel võimaldab seda hulka lihtsalt laiendada. Indeks $e$ tähistab müügiks sobivate primaarenergiate hulka st. tükikivi. $P_e$ on vastava primaarenergia müügihind ja $S$ on ajaperioodil müüdud kogus.
+Selleks, et logistikast tulev kivi jõuaks müüki, peavad kehtima veel järgmised võrrandid ja piirangud. Nagu eelnevaski kirjelduses tähistab muutuja $F$ vastavat kaubavoogu logistikasüsteemis.
+
+\begin{align}
+\sum_{i \in \kappa} S_{t,i,e} &= S_{t,\kappa,e} &\forall t,e,\kappa \label{vm1} \\
+\sum_{liin} F^{tootmisse}_{t,i,e} &= S_{t,i,e} &\forall t,i,e \label{vm2}
+\end{align}
+Nendes võrrandites esimene võrrand \eqref{vm1} garanteerib, et kuine tarneleping oleks igas kuus $\kappa$ täidetud päevaste tarnetega ning teine võrrand \eqref{vm2} seob logistika ja müügi. Juhul kui me tahame kasutada mudelit tundlikkusanalüüsiks ja näiteks pakkumiskõverate joonistamiseks, on vajalik esimene võrrand muuta võrratuseks või hoopis ülesandest välja lülitada. 
+
+\begin{verbatim}
+v_sales(year, month, k, feedstock, t_mk)$(sum(time_t$(time_t_s(time_t)
+                                                  and y_m_t), 1) > 0)..
+  sum(time_t$(time_t_s(time_t) and y_m_t), sales(time_t, k, feedstock, t_mk))
+$ifthen.two "%sales%" == "true"
+  =e=
+$else.two
+  =l=
+$endif.two
+  sum(time_t$(time_t_s(time_t) and y_m_t),
+    sale_contract(t_mk, k, feedstock, year, month))
+  / days_in_month_m(year, month)
+;
+
+v_sales_m(time_t, k, feedstock, t_mk)$(time_t_s(time_t)
+                                   and max_ratio(k, feedstock, t_mk) > 0)..
+* With Bender's decomposition
+  (bender) *
+  sum(p2$k_mines(k, p2), fs_mined(time_t, p2, feedstock, k)
+                       * enrichment_coef(p2, k, feedstock))
+   +
+* Without Bender's decomposition
+  (1 - bender) *
+  to_production(time_t, k, feedstock, t_mk)
+  =e=
+  sales(time_t, k, feedstock, t_mk)
+;
+\end{verbatim}
+
+\section{Elektri, soojuse, õli ja uttegaasi tootmine}
+% Siia on vaja lisada soojuse omatarve
+Käesoleva peatüki eesmärk on kirjeldada, kuidas ENKi põlevkivi väärtus\-ahela optimeerimismudel käsitleb sekundaareenrgia tootmisüksusi ja millise loogika alusel valib mudel parima tootmisstrateegia.
+
+Üldises vaates maksimeerib mudel alati väärtusketi muutuvkasumit. See on erinevalt kaevandamisest suhteliselt üks-ühele üle kantav koormamise maksimeerimisele vastavalt elektri, õli ja $CO_2$ referentshindadele. Mudel saab oma primaarenergia logistikaliinidelt (vastavalt kas raudtee, konveieri või autotranspordi kaudu) või ladudest ning suunab selle primaarenergia kas õli või elektri tootmisse. Allpool käsitleme elektri ja õli tootmist eraldi. Primaarenergia müük kontsernivälistele tarbijatele, mis on kolmandaks muutuvkasumi loojaks, on käsitletud eraldi logistikat puudutavas kirjatükis.
+
+\subsection{Elektri ja soojuse tootmine}
+Elektrit toodab mudel Balti Elektrijaama (BEJ) tootmisüksustes BEJ9-BEJ12 ning Eesti Elektrijaama tootmisüksustes EEJ1-7. Käesoleva mudeli versiooni juures ühe tootmisüksuse kahte katelt mudel eraldi ei kirjelda. Koostootmisplokke, mis toodavad soojust ja elektrit on üks - BEJ11.
+
+\subsubsection{Sihifunktsioon}
+Elektri ja soojuse tootmine on mudeli sihifunktsioonis igas ajaperioodis $i$ järgne\-vates kohtades: elektri referentshinnaga $P_E$ müügist saadav tulu, soojuse referentshinnaga $P_S$ müügist saadav tulu, heitmete tariifide $C_h$ ning $CO_2$ kvoodi ostmisega hinnaga $P_{CO_2}$ seotud kulud ning muud elektri tootmisega seotud kulud $C_{muud}$. Üleüldiselt on tegu suhteliselt lihtsa summeerimisega, kus $E_t$ tähistab tootmisüksuse $t$ neto elektritoodangut (MWh) ja $S_t$ tootmisüksuse neto soojustoodangut (MWh) ajaühikus. Sellele lisanduvad juhul, kui me seda modelleerida soovime ka tootmisüksuse käivituskulud $C_k$ juhul kui me antud ajaühikus ploki käivitame (binaarmuutuja $k_t \in \{0,1\}$). Lisaks sellele saame koostootmisrežiimis biomassist toodetud elektrienergia elektrienergia eest potentsiaalselt koostootmistoetust $KTT_A$ eurot MWh eest.
+
+\begin{align}
+  & \sum_{t} \mathit{P_E} \cdot E_{t} \\
++ & \sum_{t} \mathit{P_S} \cdot S_{t} \\
++ & \sum_{t} KTT_{A} \cdot E^{bio}_{t} \\
+- & \sum_{t} P_{CO_2,t} \cdot H_{CO_2,t} \\
+- & \sum_{t} C_{muud} \cdot E_{t} \\
+- & \sum_{t,h\in H} H_{h,t} \cdot C_{h,t} \\
+- & \sum_{t} C_{k} \cdot k_t  \\
+- & \sum_{t} C_{KET} \cdot \sum_e \big( \sum_{liin} F^{tootmisse}_{e,liin} + \sum_{l_t} F^{laost}_{e,l_t}\big) 
+\end{align}
+
+\subsubsection{Primaarenergia segamine kütusesegudeks}
+Primaarenergia segamise juures kütusesegudeks tuleb arvesse võtta konkreetse kütusesegu maksimaalselt lubatud osakaalu tootmisüksusesse sisenevas primaarenergias. 
+\begin{align}
+\bigg[\sum_{liin} F^{tootmisse}_{e,liin} + \sum_{l_t} F^{laost}_{e,l_t}\bigg]\cdot V_e &= \sum_{k,l} Q_{t,i,e}\cdot S_l(i) &\forall t,i,e \label{vs3} \\
+Q_{t,i,e} &\leq \sum_e \sum_{k,l} Q_{t,i,e} \cdot p_{e,t} &\forall t,i,e \label{vs1}
+\end{align}
+Võrrand \eqref{vs3} nõuab, et kõikidest ladudest ja logistikaliinidelt tootmisüksusesse sisenev primaarenergia hulgas vastavalt $M^{ladu}_e$ ja $M^{logistika}_e$ tonnides kütteväärtu\-sega $V_e$ oleks võrdne tootmisüksusesse siseneva primaarenergia hulgaga $Q^{k,l}_e$ üle kõikide lubja ja killustiku indeksite $k$ ja $l$.
+Võrratus \eqref{vs1} tagab, et primaarenergiat $e$ ei segataks tootmisüksuse $t$ kütusesegu\-sse ajaperioodis $i$  rohkem, kui on konkreetse primaarenergia maksimaalne lubatud osakaal antud plokki sisenevast primaarenergiast. Näiteks ei tohi ületada biomassi osakaal BEJ11 sisenevast primaarenergiast ületada 50\%. Kuna see peab kehtima sõltumata lubja ja killustiku lisamisest, peame me summeerima üle lubja $l$ ja killustiku $k$ indeksite.
+GAMS koodis on piirangud kirjeldatud järgnevalt:
+\begin{verbatim}
+v_fs_mix(time_t, k, feedstock, t_el)$((not t_ol(t_el))
+                           and not sameas(feedstock, "Uttegaas"))..
+    to_production(time_t, k, feedstock, t_el)
+  * cv(feedstock, k, "MWh")
+  =e=
+  sum((slot), q(time_t, slot, k, feedstock, t_el)
+            * slot_length(time_t, slot, t_el))
+;
+v_fs_max_content(time_t, slot, k, feedstock, t_el)
+                   $(time_t_s(time_t)
+                 and fs_k(k, feedstock)
+                 and max_ratio(k, feedstock, t_el) > 0)..
+  q(time_t, slot, k, feedstock, t_el)$(max_ratio(k, feedstock, t_el) > 0)
+  =l=
+  sum((k2, p2)$(max_ratio(k2, p2, t_el) > 0),
+     q(time_t, slot, k2, p2, t_el))
+   * max_ratio(k, feedstock, t_el)
+;
+\end{verbatim}
+
+
+\subsubsection{Kasutegurid}
+% Siia on vaja lisada mittelineaarsuse häkk
+Kasutegurid on modelleeritud sisendis tükati lineaarsetena. Mudelisse on iga tootmis\-üksuse $t$ jaoks ette antud paaridena kokku $n$ punkti,  mis kirjeldavad auruturbiini siseneva soojusenergia hulka $Q_{t,i}$ (MWh) ning väljuva elektrienergia hulka $E_{t,i}$ (MWh), kus $i \in \{1\dots n\}$. Vabalt valitud võimsusel töötava turbiini väljund\-võimsus lähendub lineaarse kombinatsiooni kaudu sisenevast soojusvõimsusest järgnevalt.
+ 
+\begin{align}
+\sum_{i=1}^n \lambda_{t,i} &= 1 & \forall t \\
+E_t &= \sum_{i=1}^p \lambda_{t,i} E_{t, i} & \forall t  \label{v2} \\
+Q_t &= \sum_{i=1}^p \lambda_{t,i} Q_{t, i} & \forall t  \label{v3}
+\end{align} 
+
+Võrrand \eqref{v2} defineerib, et väljundvõimsus peab olema lineaarne kombinatsioon etteantud punktide väljundvõimsusest ning võrrand \eqref{v3} defineerib, et soojusvõimsus peab olema samasuguse proportsiooniga lineaarne kombinatsioon etteantud soojusvõimsuse punktidest $Q_{t,i}$. Muutuja $\lambda_{t,i}$ tähistab proportsioone, millistega me ploki väljundvõimsuse kokku kombineerime. Tükati lineaarsuse tagamiseks tohivad nullist erineda kogu hulgal $i \in \{1\dots n\}$ vaid kaks kõrvuti paiknevat $\lambda$ muutujat. Teised peavad võrduma nulliga. Sellisel viisil tükati lineaarse lähendamisega saame me hoida võrrandisüsteeme lineaarsetena ning kasutada lineaarplaneerimise lahendusalgoritme.
+Samas selline modelleerimisviis, kuigi täpne, on arvutuslikult väga kallis, kuna $\lambda$ muutujujad peavad vastama SOS2 tingumusele, ehk ainult kõrvuti paiknevate indeksitega $\lambda$ võivad olla nullist erinevad, mis tingivad CPLEXis binaarmuutujate kasutuselevõtu ning toovad kaasa eksponentsiaalselt keerukust peegeldava lahendusaja. Selle vältimiseks on mudelis tehtud järgnev lähendus. Muidu tükati lineaarne ja kujult nõgus kõver $E_t = f(Q_t)$ on viidud kujule $E_t = a_t \cdot Q_t - b_t$. Sellisel juhul väljendub kasutegur järgmiselt:
+\begin{align}
+\eta &= \frac{E_t}{a_t \cdot Q_t - b_t} \label{vktl1}
+\end{align}
+See ülaltoodud võrrand on oma olemuselt mittelineaarne ning kasutegurile vajaliku kumera kujuga, kuid mudelis kirjeldatav lineaarselt. Tingimuseks, et see lähendus toimiks, on tarvis valida konstandid $a_t$ ning $b_t$ selliselt, et neist tulenev kõver oleks võimalikult sarnane tootmisüksuse vastava kasuteguri kõveraga. Kuna $E_t$ ja $Q_t$ paarid on sisendis ette antud, tuleb meil valida kaks konstanti ühe võrrandi (\ref{vktl1}) abil, võime ühe konstantidest vabalt (mõistuse piires) valida ning teist sobitada. Mudelis valitakse konstant $a_t$ maksimaalse kasuteguri modifikatsioonina $a_t = \eta_{max} + 0.01$. Positiivse konstandi liitmine on vajalik $b_t$ negatiivse mõju kompenseerimiseks.   Nüüd on $b_t$ võimalik valida sobitades kasuteguri kõverat võrrandiga. Praegu on see tehtud mudeliväliselt R koodis, kuid edaspidi tuleks see automatiseerida mudeli eeltöötlusse.
+Kasuteguri kasutus on realiseeritud läbi makrode ja kirjeldatud järgneva kooditükiga:
+\begin{verbatim}
+* Net power load of a turbine (ie output power)
+$macro net_load_el(time_t, slot, t_el)                                         
+            lambda_p(time_t, slot, t_el)                                       
+         * (eff_lookup(t_el, "4", "a"))                                        
+          - k_alpha(time_t, t_el) * turbine_loss(t_el)
+\end{verbatim}
+NB! Siinjuures on vajalik tähele panna, et konstandil $b_t$ ei tohi olla mõju juhul kui tootmisüksus on välja lülitatud. Seega tuleb $b_t$ läbi korrutada tootmisüksuse staatust väljendava muutujaga $k^\alpha$. Koefitsenti $a_t$ kirjeldav kasutegur \texttt{eff\_lookup(t\_el, "4", a)} on korrigeeritud eeltöötluses.
+ 
+\subsubsection{Koostootmine ja maksimaalsed koormused}
+Koostootmine on modelleeritud läbi soojushulkade. Tootmisüksuse katlast väljuv soojushulk $Q_k$ (MWh) peab olema võrdne elektri tootmiseks mineva soojushulga $Q_t$ (MWh) ning soojuse tootmiseks mineva soojushulga $Q_s$ (MWh) summaga.
+
+\begin{equation}
+Q_k = Q_t + Q_s
+\end{equation}
+
+Elektrit toodame vastavalt ülalkirjeldatud kasutegurite arvutamise meetodile. Soojustootmise kasutegur on konstantne 78\%. Seega toodetud soojus $S$ avaldub lihtsalt:
+
+\begin{equation}
+S = 0.78 Q_s
+\end{equation}
+
+Maksimaalsed koormused koostoomiseks, soojuse ja elektritootmiseks avalduvad kolme võrratusena:
+\begin{align}
+S + E &\leq Q_{max} \label{v4} \\
+E &\leq E_{max} \label{v5} \\
+S &\leq S_{max} \label{v6}
+\end{align}
+BEJ11 ploki näitel ei tohi ploki kogukoormus ületada 265 MW võrrand \eqref{v4}, ploki maksimaalne elektrikoormus on 174.6 MW neto võrrand \eqref{v5} ja soojuskoormus 120 MW neto võrrand \eqref{v6}. Juhul kui ei ole tegu koostootmisplokiga, on $S_{max} = 0$. Alltoodud koodilõigus on vaja tähele panna kolme asja:
+\begin{itemize}
+\item Operatiivmudeli puhul kehtivad need üldised piirangud operatiivmudeli planeerimishorisondist edasi olevate ajaühikut puhul (\texttt{ord(time\_t) > card(paev)}).
+\item Remondigraafikute optimeerimise puhul (mis ei ole standardmudeli osa), korrutatakse maksimaalne lubatud koormus läbi remonti indikeeriva binaarmuutujaga.
+\item Soojuskoormuse ülemine piir on lihtsuse huvides modelleeritud staatilisena, st. muutuja $S$ ülemise piiri $S^{up}$ defineerimise kaudu.
+\end{itemize}
+
+\begin{verbatim}
+$ifthen.op "%MT%" == "OP"
+  v_max_load_pu(time_t, slot, t_el)$(time_t_s(time_t)
+                           and ord(time_t) > card(paev))..
+$else.op
+  v_max_load_pu(time_t, slot, t_el)$time_t_s(time_t)..
+$endif.op
+  load_el(time_t, slot, t_el) + load_ht(time_t, slot, t_el)
+=l=
+  sum((year,month), max_load_pu(t_el, year, month)$y_m_t)
+$ifthen.three "%mx_schedule%" == "true"
+ * (1 - maint_opt(time_t, t_el))
+$endif.three
+;
+$ifthen.op "%MT%" == "OP"
+  v_max_load_el(time_t, slot, t_el)$(time_t_s(time_t)
+                           and ord(time_t) > card(paev))..
+$else.op
+  v_max_load_el(time_t, slot, t_el)$time_t_s(time_t)..
+$endif.op
+  load_el(time_t, slot, t_el)
+  =l=
+  sum((year, month), max_load_el(t_el, year, month)$y_m_t)
+$ifthen.three "%mx_schedule%" == "true"
+  * (1 - maint_opt(time_t, t_el))
+$endif.three
+;
+$ifthen.two "%ht%" == "true"
+load_ht.up(time_t, slot, t_el) = max_load_ht(t_el);
+$endif.two
+\end{verbatim}
+
+\subsubsection{Tootmisüksuse energeetiline tasakaal, uttegaas}
+Tootmisüksuse kateldesse saab siseneda primaarenergia kahel moel, läbi punkri ja kütuse etteande ning uttegaasi näol. Seega ülal modelleeritud katlast väljuv soojushulk $Q_k$ on avalduv siseneva primaarenergia koguse $Q$ ning uttegaasi energeetilise koguse $U$ näol.
+Üleüldiselt võtab tootmisüksuse töö kokku joonis \ref{joon3}.
+
+\begin{figure}
+\include{elektri_pilt}
+\caption{Elektritootmisüksuse energeetiline tasakaal
+\label{joon3}}
+\end{figure}
+
+\begin{equation}
+Q_k = Q + U
+\end{equation}
+
+Lisaks sellele on piiratud plokkide üles- ja alla koormamise kiirused.
+\begin{align}
+Q_{k,i} - Q_{k,i-1} &\leq \Delta_{ules} \\
+Q_{k,i-1} - Q_{k,i} &\leq \Delta_{alla}
+\end{align}
+GAMS koodis on \emph{ramp up} ja \emph{ramp down} kirjeldatud järgnevalt:
+\begin{verbatim}
+v_delta_up_el(time_t, slot, t_el)$(time_t_s(time_t)
+      and not sameas(t_el, "Katlamaja")
+      and delta_up(t_el) > 0
+      and not (ord(time_t) eq 1 and ord(slot) eq 1) 
+      and (not t_ol(t_el)))..
+
+  q_out(time_t, slot, t_el) - delta_up(t_el)
+                  * slot_length(time_t, slot, t_el)
+  =l=
+  q_out(time_t, slot--1, t_el)$(ord(slot) gt 1)
+  +
+  q_out(time_t-1, slot--1, t_el)$(ord(slot) eq 1)
+;
+
+v_delta_down_el(time_t, slot, t_el)$(time_t_s(time_t)
+           and not sameas(t_el, "Katlamaja")
+           and delta_down(t_el) > 0
+           and not (ord(time_t) eq 1 and ord(slot) eq 1) 
+           and (not t_ol(t_el)))..
+
+  q_out(time_t, slot, t_el) + delta_down(t_el)
+                  * slot_length(time_t, slot, t_el)
+  =g=
+  q_out(time_t, slot--1, t_el)$(ord(slot) gt 1)
+  +
+  q_out(time_t-1, slot--1, t_el)$(ord(slot) eq 1)
+;
+\end{verbatim}
+
+\subsubsection{Heitmed, killustik, lubi}
+Heitmete ja eriheitmete juures kirjeldab mudel $SO_x$,$NO_x$,$CO_2$, jahutusvee, lendtuha ja ladestatud tuha mõju. Hetkeheitmeid ning suitsugaase otseselt mudel praegu ei kirjelda. Nende olemustes ja piirangutest oleme me teadlikud ning täiendame formulatsiooni samm-sammult katmaks ka neid. Kuna lineaarplaneerimismudelid vajavad eeldusena proportsionaalsust, siis ei saa killustiku ja lubja mõju heitmetele modelleerida koefitsendina, millega vastavad eriheitmed läbi korrutada. Näiteks rikuks korrutustehe, mis ütleks, et killustiku lisamine koguses 10 t/h vähendab $SO_x$ eriheitmeid 15\% võrra lineaarust, kuna see nõuaks kahe muutuja korrutamist. Lineaarne eriheitmete kõvera nihutamine üles-alla vastavalt killustiku ja lubja lisamisele ei ole lahenduseks, kuna see viiks peaaegu kindlasti mingitel tingimustel eriheitmed negatiivsesse regiooni. Vältimaks mitte-lineaarsust ja ruutplaneerimise mudeleid, on killustiku ja lubja lisamine kirjeldatud binaarmuutujatega $L^{killustik}_k \in \{0,1\}$ ja $L^{lubi}_l \in \{0,1\}$, kus $l$ tähistab lubja ja $k$ killustiku lisamise hulka. Lisaks sellele on tootmisüksusesse sisenev primaarenergia $Q$ indekseeritud $k$ ja $l$ga, mis viib küll muutujate arvu üles, kuid tagab lineaarsuse, kuna selliselt indekseeritud $Q$ muutujat saab läbi korrutada ühe koefitsendiga, mis tähistab just sellise kütuse, luba ja killustiku kombinatsiooni eriheitmeid vastavas tootmisüksuses $t$.
+
+\subsubsection{Hetkeheitmed ja muutuja vahetus}
+Hetkeheitmete modelleerimiseks on vajalik kasutada mudelis muutuja vahetuses võtet. Hetkeheitmed on antud sisendis kontsentratsioonidena ühikus $[ mg/nm^3 ]$ igale tootmisüksusele $t$ koormusel $E$. Kõigepealt tuleb kasutegurite abil arvutada need kontsentratsioonid ümber sisenevale primaarenergiale $Q$. Järgnevalt avalduvad heitkogused:
+\begin{align}
+heide &= t_{sg} Q \cdot hh_{t}(Q) \label{vhh1}
+\end{align} 
+Kus $t_{sg}$ on suitsugaaside intensiivsus plokis etteantud koormusel ning $hh_{t}$ on vastava ploki hetkeheide. Kuna see võrrand, eeldades, et hetkeheitmed on tükati lineaarsed Q suhtes, nõuab kahe Q korrutamist ning muudaks nii PCO piirangud kui ka sihifunktsiooni ruutpolünoomiks, on vaja formulatsioon ümber kirjeldada. Kõigepealt avaldame funktsiooni $hh_t(Q)$ tükati lineaarsena:
+\begin{align}
+hh_t(Q) &= \sum_{p \in \mathcal{P}} hh_t(p) \lambda^e_p & \forall t, i,k,e \\
+        & \sum_{p \in \mathcal{P}} \lambda^e_p = 1 & \forall t, i,k,e \label{vhh3}
+\end{align}
+Nendest teise, võrrandi \ref{vhh3} saame me koheselt koodis modelleerida järgmiset.
+\begin{verbatim}
+v_em_lambda5(time_t, slot, t_el, k, feedstock)$(time_t_s(time_t)
+                           and not sameas(t_el, "Katlamaja")
+                           and max_ratio(k, feedstock, t_el)>0)..
+  sum((para_lk, k_level, l_level), lambda_e(time_t, slot, t_el,
+                         k, feedstock, k_level, l_level, para_lk))
+  =e=
+  1
+;
+\end{verbatim}
+Kus $hh_t(p)$ on vastava ploki hetkeheide punktis $p$ ja $\lambda^e_p$ on selle vastav tükati lineariseeriv muutuja. Seega muutub võrrand \ref{vhh1} järgnevaks
+\begin{align}
+heide &= t_{sg} Q \cdot \sum_{p \in \mathcal{P}} hh_t(p) \lambda^e_p  & \forall t,i,k,e \\
+      &= t_{sg} \sum_{p \in \mathcal{P}} hh_t(p) Q \lambda^e_p  & \forall t, i, k, e \label{vhh2}
+\end{align}
+Seega on meil võrrandi \ref{vhh2} korrutustehe $Q \lambda^e_p$ modelleerida lineaarse kombinatsioonina. Kuna korrutise teguritest on üks reaalarvuline $Q$ ning teine binaarne $\lambda^e$, siis saame läbi viia järgneva muutuja vahetuse:
+\begin{align}
+z_p &= Q \lambda^e_p & \forall t, i, k, e  
+\end{align}
+Mis vastab tingimustele:
+\begin{align}
+z_p &> Q & \forall t, i, p, k ,e  \\
+z_p &\leq \lambda^e_p hh_t(p) & \forall t, i, p, k, e  
+\end{align}
+ NB! Pane tähele, kuna tegemist on heitmetega, mis on sihifunktsioonis negatiivse mõjuga, peab õige tulemuse saavutamiseks seadma $Q$ muutuja $z$ile alumise piiri. Ülemist piiri seades omaks positiivset väärtust alati minimaalset $z$i pakkuv lineaarne kombinatsioon $\lambda^e_p$ dest. Altoodu on sama muutuja vahetus GAMS koodis
+\begin{verbatim}
+v_em_var_rep1(time_t, slot, t_el, k, feedstock, para_lk)$(
+                               time_t_s(time_t)
+                           and max_ratio(k, feedstock, t_el) > 0
+                           and ord(para_lk) > 1)..
+  z_emission(time_t, slot, k, feedstock, t_el, para_lk)
+  =l=
+  sum((k_level, l_level),
+      lambda_e(time_t, slot, t_el,
+               k, feedstock, k_level, l_level, para_lk))
+  * hh_q(t_el, para_lk)
+;
+v_em_var_rep2(time_t, slot, t_el, k, feedstock)$(
+                               time_t_s(time_t)
+                           and max_ratio(k, feedstock, t_el) > 0)..
+  sum(para_lk, z_emission(time_t, slot, k, feedstock, t_el, para_lk) )
+  =g=
+  q(time_t, slot, k, feedstock, t_el)
+;
+\end{verbatim}
+
+
+\subsubsection{Võrratused}
+Killustiku ja lubja lisamiste koguseline tasakaal on kirjeldatud sarnaselt kütuse segamiste tasakaaluvõrranditega. Lisaks sellele on heitmete ja hetkeheitmete modelleerimiseks kasutatud tükati lineaarsed $\lambda^e$ muutujad seotud vastavate killustiku ja lubja lisamise kogustega $L^{killustik}_{t,i,k}$ ja $L^{lubi}_{t,i,l}$.
+\begin{align}
+\sum_{e,l,p} \lambda^e_{t,i,e,p} &\leq L^{killustik}_{t,i,k} \cdot M &\forall t,i,k \\
+\sum_{e,k,p} \lambda^e_{t,i,e,p} &\leq L^{lubi}_{t,i,l} \cdot M &\forall t,i,l \\
+\sum_{k > 0} L^{killustik}_{t,i,k} &\leq E_{t,i} \cdot M &\forall t,i \\
+\sum_{l > 0} L^{lubi}_{t,i,l} &\leq E_{t,i} \cdot M &\forall t,i \\
+\sum_k L^{killustik}_{t,i,k} &= 1 &\forall t,i \\
+\sum_l L^{lubi}_{t,i,l} &= 1 &\forall t,i 
+\end{align}
+Koodis on samad võrratused järnevalt modelleeritud:
+\begin{verbatim}
+v_em_lambda1_k(time_t, slot, t_cl, k_level)$time_t_s(time_t)..
+  sum((k, feedstock, l_level, para_lk)$(ord(para_lk) > 1
+                       and max_ratio(k, feedstock, t_cl) > 0),
+       lambda_e(time_t, slot, t_cl, k,
+                feedstock, k_level, l_level, para_lk))
+  =l=
+  add_k(time_t, slot, t_cl, k_level)
+;
+
+v_em_lambda1_l(time_t, slot, t_lime, l_level)$time_t_s(time_t)..
+  sum((k, feedstock, k_level, para_lk)$(ord(para_lk) > 1
+                       and max_ratio(k, feedstock, t_lime) > 0),
+       lambda_e(time_t, slot, t_lime,
+                k, feedstock, k_level, l_level, para_lk))
+  =l=
+  add_l(time_t, slot, t_lime, l_level)
+;
+
+v_cl_use(time_t, t_cl)$time_t_s(time_t)..
+  sum(k_level, add_l(time_t, slot, t_cl, k_level))
+  =l=
+  load_el(time_t, slot, t_cl) * M ;
+;
+v_lime_use(time_t, slot, t_lime)$time_t_s(time_t)..
+  sum(l_level, add_l(time_t, slot, t_lime, l_level))
+  =l=
+  load_el(time_t, slot, t_lime) * M ;
+v_em_lambda4_k(time_t, slot, t_cl)$time_t_s(time_t)..
+  sum(k_level, add_k(time_t, slot, t_cl, k_level))
+  =e= 1
+;
+v_em_lambda4_l(time_t, slot, t_lime)$time_t_s(time_t)..
+  sum(l_level, add_l(time_t,  slot, t_lime, l_level))
+  =l= 1
+;
+\end{verbatim}
+
+\subsubsection{Süsihappegaas}
+%Siia on vaja juurde panna süsihappegaasi arvutamise valem
+Süsihappegaasi heitmed on modelleeritud arvutuslikult sõltuvalt siseneva primaarenergia hulgast järgneva valemi abil
+\begin{equation}
+H^{CO2}_{plokk, aasta} = P^{CO_2}_{aasta} \left( \sum_{fuel} k_{fuel} \cdot w^{fuel, plokk}_{CO_2} + \sum_{lisand} w^{lisand, plokk}_{CO_2} \right)
+\end{equation}
+
+\subsubsection{$SO_x$}
+%ja nox
+\begin{equation}
+H_{SO_x, t} = \big( Q + U \big) C_{SO_x, t, k, l} \quad \forall t
+\end{equation}
+Kus $t$ tähistab tootmisüksust, $k$ tähistab killustiku lisamise taset ja $l$ tähistab lubja lisamise taset. 
+
+\subsubsection{Ülejäänud heitmed}
+Ülejäänud heitmetest on $NO_x$, lendtuhk, ladestatud tuhk kirjeldatud eriheitme koefitsendina võrdelises sõltuvuses tootmisüksusess sisenevast energiahulgast. Jahutusvesi, mis puudutab ainult elektritoomist on modelleeritud olema võrdelises sõltuvuses tootmisüksuse elektrikoormusest.
+
+\subsubsection{lendtuhk ja ladestunud tuhk}
+Hetkel on PCO-s arvutatud heitmed kujul:
+\begin{equation}
+H^{heide}_{t} = \sum_e \sum_{k,l} \bigg[ \alpha^0_{t, e, k,l} \cdot Q^{k,l}_{t,i,e}  \bigg] 
+\end{equation}
+Heitme kulu saame kui korrutame eriheitme läbi vastava aasta $A$ keskkonnatariifiga sellele heitmele $heide$ $P^{heide}_{A}$ ning prügila (ladestunud tuhk) või asukohakoefitsiendiga (ülejäänud heitmed) $\lambda^{heide}$
+\begin{equation}
+C^{heide}_{t, A} = P^{heide}_{aasta} \cdot H^{heide}_{t} \cdot \lambda^{heide}
+\end{equation}
+Siin on mõistlik tähele panna, et samaaegseks lineaarsuse tagamiseks ja lubja ning killustiku multiplikatiivse mõju modelleerimiseks on meil enne mudeli võrrandisüsteemi koostamist vaja välja arvutada eriheitme koefitsendid $\alpha^0$ kõigile lubja ja killustiku ning primaarenergia kombinatsioonidele, mis konkreetsesse $t$ plokki minna on lubatud. Kuna see kombinatsioonide arv on suhteliselt suur ning lubja ja killustiku mõju on korrutamise teel arvutatav eeltöötluses, siis need koefitsendid arvutatakse välja mudelis ning kasutajalt nende sisestamist mudelile vajalikul kujul me ei eelda.
+
+\subsubsection{Jahutusvee kulu}
+Jahutusvee hulk $w_{t}$ on antud ühikuga $\left[ \frac{\text{m}^3}{\text{MWh(el)}} \right]$, seega seda ei pea teisendama kasuteguri ega kütteväärtusega. Jahutusvee kulu avaldub jahutusvee tariifi $P^{jahutusvesi}_{A}$ kaudu järgmiselt:
+\begin{align}
+C^{jahutusvesi}_{t, i} &= \sum_A 1_{i\in A} \cdot P^{jahutusvesi}_{A} \cdot w_{t} &\forall t,A
+\end{align}
+
+\subsubsection{Lisandite kulu (lubi, killustik)}
+Lisandi muutuvkulu avaldub sihifunktsioonis kujul 
+\begin{align}
+C^{lisand}_{t, i} &= \frac{ \sum_A 1_{i\in A} \cdot P^{lisand}_{A} 
+\cdot l_{lisand, t,i}}{Q_{t}} &\forall lisand, t, i, A
+\end{align}
+
+%Hetkeheitmete piirang
+\subsubsection{Kvoodid}
+Ainus kvoot, mida me heitmete juures arvestama peame ja ületada ei tohi on $SO_x$ kvoot ca 24,500 t aastas $A$. Seega lisandub väärtusketi optimeerimismudeli võrrandsüsteemi veel üks võrratus, mis seab summaarsele $SO_x$ heitmele üle kõigi tootmisüksuste $t$ ja primaarenergiate $e$ ning aastasse $A$ kuuluvate päevade $i$ järgneva piirangu:
+
+\begin{equation}
+\sum_{i\in A} \sum_{t, e} H_{SO_x, t, i, e}\cdot S_l \leq \mathit{K_{SO_x}} - \mathit{K^s_{SO_x}}  \quad \forall A
+\end{equation}
+
+\begin{verbatim}
+v_so_quota(year)..
+  sum((time_t, month)$(time_t_s(time_t) and y_m_t),
+      sum(t_el, sum(slot,
+        sum((feedstock, k)$(max_ratio(k, feedstock, t_el) > 0),
+          em_level_el(time_t, slot, "so", k, feedstock, t_el))
+        * slot_length(time_t, slot, t_el)
+              )
+          ))
+* Taking into account already spent quota
+   =l=
+   em_quota(year, "so") - spent_sox(year)
+;
+\end{verbatim}
+
+\subsubsection{Korstnate töötunnid}
+IED direktiivi erisuse tõttu peab mudelis kirjeldama tootmisüksuste korstnate töötunde. Seda teeme järgmiste võrratuste abil. Esimene võrratus garanteerib, et ploki koormamise korral peab olema vastava  korstna kasutuse otsustusmuutuja nullist erinev. Teine võrratus garanteerib, et vastava korstna töötunnid ei ületa lubatud töötundide maksimaalset limiiti.
+
+\begin{align}
+k^\alpha_{t,i} & \leq a^{s}_{i, s} & \forall t,s \in \langle s, t \rangle, \forall i \\
+\sum_{i} a^{s}_{i, s} S_l  &\leq T^{max}_{s} & \forall s 
+\end{align}
+
+Koodis on need piirangud ära toodud järgnevalt.
+
+\begin{verbatim}
+v_stack_active(time_t, slot, t_stack)$time_t_s(time_t)..
+  sum(t_el$t_unit_stack(t_stack, t_el),
+       k_alpha(time_t, slot, t_el)
+     )
+  =l= st_active(time_t, slot, t_stack)
+;
+\end{verbatim}
+
+\begin{verbatim}
+v_stack_hours(t_stack)$(hour_limit(t_stack) > 0)..
+     sum((time_t, slot)$time_t_s(time_t),
+          st_active(time_t, slot, t_stack)
+        * smax(t$t_unit_stack(t_stack, t), 
+          slot_length_orig(time_t, slot, t))
+    )
+    =l= hour_limit(t_stack)
+;
+\end{verbatim}
+
+\subsubsection{Remondid, avariilisused ja puhastused}
+%Remondi ja avariilisuse ja puhastuste mõju läheb maha sloti tundidest, mitte võimsusest
+Tootmisüksuste remondid, avariilisused ja puhastused on modelleeritud läbi netokoormuste. Remondigraagikud on mudelis binaarmuutujatena $r_t \in \{0,1\}$, kus $r_t$ on võrdne nulliga kui ajaühikus $t$ plokk ei ole remondis ning ühega, kui plokk on remondis. Avariilisused $a_t$ on kirjeldatud kaotatud tundide arvuna ploki töötunnist slotis $S_l$ ning puhastused on modelleeritud analoogselt remondigraafikutega binaarselt $t^{cl} \in \{0,1\}$. 
+
+\begin{equation}
+S_t + E_t \leq Q_{max,t}(1 - r_t)(1-p_t)
+\end{equation}
+
+Kuna tolmpõletusplokis tuleb katelt puhastada korra kahe nädala jooksul ning ühes tootmisüksuses on kaks katelt, tuleb iga seitsme päeva tagant tagada puhastuse juures see, et plokk töötaks poole koormusega (1 katla režiimis). Loogikana töötab see niimoodi, et mudel loeb päevi alates viimasest puhastusest $ts^{cl}$. Puhastuse $t^{cl}$ peab tegema kõige hiljemalt siis, kui tööpäevade arv viimasest puhastusest ületab etteantud maksimaalse tööpäevade arvu.
+
+\begin{align}
+ts^{cl}_{t,i} &\geq ts^{cl}_{t,i-1} + k^\alpha_{t,i} - 7 t^{cl}_{t,i} &\forall t,i \\
+6 t^{cl}_{t,i} &\leq ts^{cl}_{t,i} & \forall t,i \\
+t^{cl}_{t,i} & \geq ts^{cl}_{t,i-1} - 6 & \forall t,i
+\end{align}
+
+Koodis on puhastused kirjeldatud järgnevalt.
+
+\begin{verbatim}
+v_cleaning1(time_t, t_el)$(time_t_s(time_t)
+$ifthen.op "%MT%" == "OP"
+                       and ord(time_t) > card(paev)
+$endif.op
+                       and ord(time_t) > 1
+                       and not t_tech("CFB", t_el) and not t_ol(t_el)
+                          )..
+  t_cleaning_s(time_t, t_el)
+  =g=
+  (1 - period_switch) *
+* For monthly resolution, the following needs to be switched off
+  (
+    t_cleaning_s(time_t-1, t_el)
+    + k_alpha(time_t, t_el)
+    - t_cleaning(time_t, t_el) * round(num_days(clean_span, time_t, t_el))
+   )
+;
+
+v_cleaning2(time_t, t_el)$(time_t_s(time_t)
+$ifthen.op "%MT%" == "OP"
+                       and ord(time_t) > card(paev)
+$endif.op
+                       and ord(time_t) > 1
+                       and not t_tech("CFB", t_el) and not t_ol(t_el))..
+  t_cleaning(time_t, t_el) * (num_days(clean_span, time_t, t_el) - 1)
+  =l=
+  t_cleaning_s(time_t-1, t_el)
+;
+
+v_cleaning2a(time_t, t_el)$(time_t_s(time_t)
+$ifthen.op "%MT%" == "OP"
+                       and ord(time_t) > card(paev)
+$endif.op
+                       and ord(time_t) > 1
+                       and not t_tech("CFB", t_el) and not t_ol(t_el))..
+  t_cleaning(time_t, t_el)
+  =g=
+  (1 - period_switch) *
+  (
+    t_cleaning_s(time_t-1, t_el) - (num_days(clean_span, time_t, t_el) - 1)
+  )
+;
+\end{verbatim}
+
+Lisaks puhastuste ajastamisele tuleb kirjutada veel üks piirang, mis koormab tootmisüksuse $t$ alla juhul kui antud ajaühikusse $i$ on planeeritud puhastus $t^{cl}_{t,i}$. Nagu ikka, piirang kehtib ainult tolmpõletusplokkidele.
+
+\begin{equation}
+E_{t,i} \leq \mathit{E}_{max} (1 - 0.5 t^{cl}_{t,i}) \forall t,i
+\end{equation}
+
+
+Koodis näeb see välja järgmisel.
+\begin{verbatim}
+v_cleaning3(time_t, slot, t_el)$(time_t_s(time_t)
+                                       and not t_tech("CFB", t_el)
+                                       and not t_ol(t_el)
+$ifthen.op "%MT%" == "OP"
+                                       and ord(time_t) > card(paev)
+$endif.op
+)..
+  load_el(time_t, slot, t_el)
+  =l= sum((year, month)$y_m_t, max_load_el(t_el, year, month))
+$ifthen.four "%mx_schedule%" == "true"
+      * (1 - maint_opt(time_t, t_el))
+$endif.four
+      * (1 - t_cleaning(time_t, t_el) * cleaning_coeff)
+;
+\end{verbatim}
+
+\subsubsection{Tootmisüksuse poolpidev koormamine ja käivituskulud}
+Tootmisüksus tohib töötada miinimum ja maksimumkoormuste vahemikus. Käi\-vitus\-kulusid kirjeldab väärtusketi muutuvkasumi maksimeerimise mudel järg\-nevate võrratuste abil. 
+
+\begin{align}
+E_{t,i} &\geq k^\alpha_{t,i} \cdot E_{min \quad t,i} & \forall t,i \label{vk1} \\
+E_{t,i} &\leq k^\alpha_{t,i} \cdot E_{max \quad t,i} & \forall t,i \label{vk2}
+\end{align}
+
+Esimene võrratus \eqref{vk1} sunnib tootmisüksuse staatuse binaarmuutuja $k^\alpha_{t,i}$ muutuma erinevaks nullist, kui tootmisüksuse elektrikoormus on nullist suurem, ehk plokk on käesoleval ajahetkel koormatud vähemalt miinimumkoormusega. Teine võrratus \eqref{vk2} garanteerib selle, koormamata tootmisüksuse toodang ei ole nullist erinev. GAMS koodis siis järgnevalt.
+
+\begin{verbatim}
+v_beta1(time_t, slot, t_el)$(time_t_s(time_t)
+$ifthen.op "%MT%" == "OP"
+                       and ord(time_t) > card(paev)
+$endif.op
+)..
+  load_el(time_t, slot, t_el)
+  =l=
+  k_alpha(time_t, t_el) 
+  * sum((year, month)$y_m_t, max_load_el(t_el, year, month))
+;
+
+v_unit_commitment(time_t, slot, t_el)$(time_t_s(time_t))..
+  load_el(time_t, slot, t_el)
+  =g=
+  k_alpha(time_t, t_el) * min_load_el(t_el)
+;
+
+\end{verbatim}
+
+Lisaks sellele on \emph{unit commitment} staatuse võrrandiga otseselt seotud käivitus\-kulud. Võrratuste mõte on sundida ajaperioodis tehtavat käivita\-mise otsust tähistav binaarmuutuja $k_{t,i} \in \{0,1\}$ suuremaks kui null juhul, kui tootmisüksuse $t$ koormust on optimaalne tõsta ajaperioodis $i$ nullist kõrgemale.
+\begin{align}
+k^\alpha_{t,i} \leq k^{start}_{t,i} + k^\alpha_{t-1,i} &\forall t,i
+\end{align}
+Võrrand on GAMS koodis järgnevalt kirjeldatud:
+\begin{verbatim}
+v_unit_status(time_t, t_el)$(time_t_s(time_t) and ord(time_t) > 1)..
+  k_alpha(time_t, t_el)
+  =l=
+  t_startup(time_t, t_el)
+  +
+  k_alpha(time_t--1, t_el)
+;
+\end{verbatim}
+
+\subsubsection{Koostootmistoetused}
+% Koostootmistoetused välja!
+Koostootmistoetusi praegu meie põlevkivi väärtusketi tootmisüksustele ei maksta. Juhul kui need peaks tagasi tulema, võimaldab mudel arvestada koostootmisplokkidele biokütusest koostootmisrežiimis tootmisüksuses $t$ ajaperioodil $i$ toodetud elektrienergia (MWh) $E^{bio}_{t,i}$ eest makstavat koostootmistoetust. Koostootmistoetuse piirangud on kirjeldatud järgnevate võrratustega.
+\begin{align}
+E^{bio}_{t,i} &\leq E_{t,i} \cdot p^{bio}_{t} & \forall t,i \label{vkt2} \\
+E^{bio}_{t,i} &\leq S_{t,i} & \forall t,i \label{vkt3} \\
+\sum_t \sum_{i \in A} E^{bio}_{t,i} &\leq E^{bio}_{max} & \forall A \label{vkt4}
+\end{align}
+Kuna toetust makstakse ainult biokütusest toodetud elektri eest, võrratusega \eqref{vkt2} me garanteerime, et biokütusest saadav elektrikoormus ei ületaks proportsionaalselt tootmisüksusesse siseneva biokütuse proportsiooni kogu ajaühikus kasutatud primaarenergiast.
+Võrratus \eqref{vkt3} määrab, et koostootmistoetust saab ainult elektrilt, mis on toodetud koostootmisrežiimis (st. soojatoodang peab olema nullist suurem).
+Võrratus \eqref{vkt4} garanteerib, et me ei toodaks koostootmistoetusele kvalifitseeruvat elektrienergiat rohkem, kui on vastav aastane ülemine piirmäär aasta $A$ jaoks.
+
+Sihifunktsioonis kajastub koostootmistoetus lihtsalt korrutise näol. Kuna koostootmistoetus on turuhinnale lisanduv komponent, siis garanteerib sihufunktsioon muutuvkasumi maksimeerimise näol, et koostootmistoetuse muutuja $E^{bio}_{t,i}$ on alati maksimeeritud.
+
+\subsection{Remondigraafikute ja puhastuste optimeerimine}
+Juhul, kui soovime optimeerida tootmisüksuste remondigraafikute ja puhastuste paiknemist, tuleb ülalkirjeldatud parameeter $r_t$ asendada uute piirangutega. Muutujaks $r_t$ minna ei tohi, sest see rikuks mudeli lineaarsuse (nõuaks kahe muutuja korrutamist) ja muudaks optimaalse lahendi leidmise palju keerukamaks. Seega, remondigraafikute optimeerimiseks on väärtusketi mudelis järgnevad võrrandid, kus $t$ tähistab tootmisüksust ja $i\in A$ ajaperioodi aastas $A$. Tootmisüksuse remondi alguspäeva tähistab binaarmuutuja $s_{t,i} \in \{0,1\}$, mis omab väärtust 1 kui sellel ajaperioodil (päeval) alustatakse tootmisüksuse remonti.
+
+\begin{align}
+E_{t,i} &\leq (1 - r_{t,i}) \cdot M & \forall t \label{vr1} \\  
+\sum_{i \in A} r_{t,i} &= R_{t,A} & \forall t, A \label{vr2} \\ 
+\sum_{i \in A} s_{t,i} &= 1 & \forall t, A \label{vr3} \\
+r_{t,i} &= \sum_{j < i \land  j \in A \land j \geq i - R_{t,A} } s_{t,j} & \forall t, i, A \label{vr4}
+\end{align}
+
+Võrrtus \eqref{vr1} nõuab, et juhul kui tootmisüksus on remondis, ei saa seda koormata. Võrrand \eqref{vr2} nõuab, et aastas oleks ettemääratud hulk remondipäevi. Võrrand \eqref{vr3} nõuab, et remont tehtaks ühe plokina, st ei toimuks remontide jupitamist ja laialimäärimist kogu aasta peale. Võrrand \eqref{vr4} nõuab, et alates remondi alguspäevast, mida tähistab muutuja $s_{t,i}$ oleks tootmisüksus remondis $R_{t,A}$ arv päevi.
+
+\subsection{Õli tootmine}
+% Õli võimekus (kivis) on arvutatud keskmisele kütteväärtusele. Selle kalibreerimine on vaja lisada.
+Õli tootmine on modelleeritud läbi õli saagise $p_o$, mis sisuliselt ühe valemiga toodab tonnist põlevkivist õli. Saagis jääb üldjoontes 11 ja 12\% vahele. Seega õli ja uttegaasi tootvat tootmisüksust $t$ kirjeldavad võrrandid on järgmised:
+
+\begin{align}
+O_{t} &= p_{o,t} \cdot m_t \\
+U_{t} &= p_{u,t} \cdot m_t 
+\end{align}
+Kus $O_t$ tähistab ajaühikus toodetud põlevkiviõli, $U_t$ tähistab ajaühikus toodetud uttegaasi ning $m_t$ tähistab tootmisüksusesse ajaühikus sisenenud primaarenergiat tonnides. Õlitehase toomisvõimekus ei tohi ületada maksimaalset tootmisvõimekust.
+
+\begin{verbatim}
+v_oil(time_t, t_ol)$time_t_s(time_t)..
+  sum((k, feedstock), to_production(time_t, k, feedstock, t_ol)
+  * sum((year, month)$y_m_t,  adj_yield_oil(t_ol, year, k, feedstock)))
+  =e=
+  oil(time_t, t_ol)
+;
+v_max_rg(time_t)$time_t_s(time_t)..
+  sum((slot, t_el), q(time_t, slot, "Hange", "Uttegaas", t_el)
+                  * slot_length(time_t, slot, t_el))
+
+$ifthen.two "%rg_balance%" == "true"
+  =e=
+$else.two
+  =l=
+$endif.two
+  sum((k, feedstock, t_ol), to_production(time_t, k, feedstock, t_ol)
+    * rg_yield(t_ol)
+    * cv("Uttegaas", "Hange", "MWh"))
+;
+\end{verbatim}
+
+\subsection{Uttegaas}
+Peale õli modelleerime õlitehases uttegaasi tootmist.
+
+\begin{align}
+\sum_t U_{t\in T_{el},i} &= \sum_e \sum_{t\in T_{oli}} \bigg[ \bigg(\sum_{l_t} F^{laost}_{t,i,e,l_t} + \sum_{liin} F^{liinilt}_{t,i,e,liin}\bigg)\cdot  p_{u,t}\bigg] &\forall i \\
+U_{t_e,i} &\geq \sum_{t_o} O_{t_o,i}/O^{max}_{t,i} \cdot E_{t_e,i} / E^{max}_{t_e,i}\cdot p_{u} &\forall t_e,i
+\end{align}
+Õlitehases $t_o$ toodetud uttegaasi kasutamine elektritootmisüksuses $t_e$ peab olema  proportsionaalne õlitehase koormusega ning proportsionaalne eletritootmisüksuse koormusega.
+
+\begin{verbatim}
+v_max_rg(time_t)$time_t_s(time_t)..
+  sum((slot, t_el), q(time_t, slot, "Hange", "Uttegaas", t_el)
+                  * slot_length(time_t, slot, t_el))
+
+$ifthen.two "%rg_balance%" == "true"
+  =e=
+$else.two
+  =l=
+$endif.two
+  sum((k, feedstock, t_ol), to_production(time_t, k, feedstock, t_ol)
+    * rg_yield(t_ol)
+    * cv("Uttegaas", "Hange", "MWh"))
+;
+  v_rg_division(time_t, slot, t_el)$(time_t_s(time_t)
+         and not t_ht(t_el)
+         and (sum((year,month)$y_m_t, max_koormus_el(t_el, year, month)) > 0)
+         and sum((year, month)$y_m_t, t_uttegaas_kokku(year, month)) > 0
+         and cv("Uttegaas", "Hange", "MWh") > 0)..
+    q(time_t, slot, "Hange", "Uttegaas", t_el) / cv("Uttegaas", "Hange", "MWh")
+    =g=
+    sum((year, month)$y_m_t, t_rg(year, month, t_el) / t_rg_total(year, month))
+    *
+    sum((t_ol,year,month)$(yield_oil(t_ol, year)>0),
+             (
+                 (max_load_ol(t_ol, year, month)/days_in_month(year, month))
+             /yield_oil(t_ol, year))$y_m_t
+    )
+    * rg_yield(t_ol)
+    / slot_length_orig(time_t, slot, t_ol)
+    * load_el(time_t, slot, t_el)/
+         sum((year,month)$y_m_t, max_load_el(time_t, t_el, year, month))
+;
+\end{verbatim}
+Uttegaasi maksimaalne kogus, mida tootmisüksus $t$ ajaühikus $i$ tarbida võib, on ära määratud sama maksimaalse osakaalu võrratusega (\ref{vs1}), mis kehtib ka ülejäänud primaarenergiatele. NB! Uttegaasi proportsionaalne kasutus on mudeli lisavõimalus, mis tavaseadetes on harilikult välja lülitatud.
+
+\section{Mudeli lahendamine}
+Erinevalt Exceli töövahenditest on ENK väärtusketi optimeerimismudeli juures otseselt tegu lineaarvõrrandisüsteemiga, kus on veerge (muutujaid) umbkaudu suurusjärgu rohkem kui ridu (piiranguid). Ilma süüvimata optimeerimise ja lineaarplaneerimise teooriasse, avaldub ülalkirjeldatud võrrandisüsteem järgmisel kujul.
+
+\printindex
+\begin{align}
+\mathrm{max} \quad &cx + dy \nonumber\\
+&Ax + Gy \leq b \nonumber \\
+&x \in \mathbb{R^+}, y \in \{0,1\} \nonumber
+\end{align}
+
+Siin tähistavad $c$ ja $d$ sihifunktsiooni koefitsentide vektorit vastavalt reaalarvuliste muutujate vektorile $x$ ja binaarmuutujate vektorile $y$. Analoogselt on $A$ ja $G$ vastavad piirangute koefitentide maatriksid ja $b$ on piirangute väärtuste vektor.
+Ehk siis, meie ülesanne on leida sellele lineaarvõrrandisüsteemile selline lahend, mis maksimeeriks sihifunktsiooni väärtust. Kuna võrrandites on oluline hulk kahendmuutujaid, siis on siinkohal tähtis märkida, et tegemist ei ole lineaarplaneerimisülesande vaid sega-täisarvplaneerimisülesandega, kus osa muutujaid võivad omada vaid väärtusi 0 ja 1. 
+
+Selle võrrandisüsteemi lahendamiseks mõistliku aja piirides (vähem kui paar tundi) on vaja teha üldistusi ja kasutada lahendusmeetodeid, mis on mudeli tüübile kõige sobivamad. Läbi eksperimenteerimise leidsime, et ülesande lahendab kõike efektiivsemalt \emph{CPLEX v12} solver (vastandina näiteks \emph{GUROBI} solverile kasutades sisepunkti meetodit\footnote{ing. k \emph{interior point method}} vastandina tüüpilisele \emph{primal simplex} või \emph{dual simplex} meetoditele. Lisaks sellele on sisepunktimeetod paralleliseeritav, andes meile võimaluse kasutada ära mitmetuumalise protsessori eeliseid. Lisaks sellele leidsime me, et kui me lõdvendame ülesande piiranguid osaliselt asendades binaarmuutujad $y \in \{0,1\}$ reaalarvuliste muutujatega $y' \in \{z\in \mathbb{R^+} | 0 \leq z \leq 1\}$. Sellisel viisil lõikame me lahendusaega väiksemaks, väldime eksponentsiaalset keerukust ja tänu ülesande iseloomule saame siiski piisavalt lähedased tulemused kus vahe $|y-y'|$ ei ületa märkimisväärselt lubatud vea piiri $\epsilon$. Käesoleva teksti kirjutamisel on ilma käivituskulude ja puhastuste arvestamiseta mudeli lahendusaeg orienteeruvalt 10-15 minutit 5 aastase ajahorisondiga mudeli juures ning \emph{ca} 2 tundi koos käivituskulude ja katelde puhastuste arvestamisega, mis lisab mudelisse märkimisväärt portsjoni eksponentsiaalselt keerukust.
+
+Kuna kirjeldatud võrrandisüsteem on suhteliselt hajus (maatriksites $A$ ja $G$ on palju nulle) ning suhteliselt diagonaalse struktuuriga ajaperioodide kaupa, mida liidavad üheks vaid üksikud piirangud (kuised tootmisvõimekused, tarne- ning ostulepingud, aastane $SO_x$ kvoot ning laojäägid), siis tuleks seda teadmist lahendusajas võitmise eesmärgil ära kasutada. Näiteks oleks ilmselt võimalik võita lahendusaega kasutades Dantzig-Wolfe tükeldamist. See ilmselt küll eeldaks, et me kirjeldame tükeldamise algoritme ja kogu ülesande formulatsiooni praeguse GAMSi asemel mõnes üldkasutatavamas programmeerimiskeeles nagu C$^{++}$ või C$^\sharp$.
+
+Mudeli seadetes, kus on vajalik sama mudelit lahendada korduvalt veidi erinevate sisendite korral (nt. nõudluskõverad ja stohhastilise planeerimisülesanded), kasutame järjestikuse tsüklilise lahendamise asemel, kus iga ülesanned käsitleme koodis eraldi, GAMSi GUSS (\emph{Gather Update Scatter Scenario}) vahendit, mis võimaldab meil CPLEXile ette anda ühe portsjonina kõigi simulatsioonide andmed, mida CPLEX suudab oma sisemiste mehhanismidega oluliselt kiiremini ära lahendada. Selleks on vaja eelnevalt koostada vastav \emph{scenario dictionary}, mis kirjeldab CPLEXile edasi antavaid simulatsioonist simulatsiooni muutuvaid sisendeid ja tagasi küsitavaid väljundeid. Väljunditeks on nii otsustusmuutujate ja võrrandite tasemed kui ka varihinnad. Näiteks nõudluskõverate jaoks koostame järgmise \emph{scenario dictionary}, kus anname ette simulatsioonide hulga $sim_subset$ ja kaeve muutuvkulud $fs_vc$ ning tootmise ja primaarenergia kasutuseks tagasi trobikonna muutujaid. Kuna siinjuures meil ei ole tarvis varihindu, siis neid me ei päri:
+
+\begin{verbatim}
+Set dict
+   /
+     o.                     opt.                  ""
+     sim_subset.            scenario.             ""
+     fs_vc.                 param.                fs_vc_s
+     total_profit.          level.                total_profit_s
+     z_emission.            level.                z_emission_l
+     load_ht.               level.                load_ht_l
+     load_el.               level.                load_el_l
+     oil.                   level.                oil_l
+     storage_to_production. level.                storage_to_production_l
+     logs_to_production.    level.                logs_to_production_l
+   /;
+\end{verbatim}
+Mudeli lahendamise juures lisame hariliku käsurea lõppu \emph{scenario dictionary} kasutamist nõudva rea:
+\begin{verbatim}
+Solve model pco maximizing total profit using scenario dict;
+\end{verbatim}
+
+Mudeli lahendamise strateegia kaheastmelise stohhastilise planeerimisülesande juures lisab ülalkirjeldatud lahendusele oluliselt keerukust ning seetõttu on kirjeldatud eraldi peatükis \ref{sec:stoch_bender}.
+
+% Lisada nõudluskõverad, marginaalid, stohhastika, Benderi tükeldus
+\section{Mudeli lisavõimalused}
+\label{sec:lisad}
+\subsection{Primaarenergia nõudluskõverad}
+Primaarenergia nõudluskõverate arvutamist on primaarenergia kauplejatele ja pikale planeerimisele, et näha meie tegelikke lubatavaid maksimaalseid hinnatasemeid kaevandatavale ja/või hangitavale primaarenergiale. Nõudluskõveraid on vaja kahel eri viisil: puuduolevale primaarenergiale (vastus küsimusele, ``kui palju meil konkreetset primaarenergiat lisaks olemasolevale oleks juurde vaja ja millise hinnaga?'') ja üleüldiselt kogu kasutatavale primaarenergiale (vastus küsimusele, ``Kui mitu MWh primaarenergiat meile vaja on ja millise hinnaga?'').
+\subsubsection{Lahenduse idee}
+Lahenduse idee mõlemas nõudluskõvera variandis on suhteliselt lihtne. Hakkame ühe hangitava primaarenergia hinda järkjärgult tõstma ning küsime mudelilt, kui palju ta sellise hinnaga antud primaarenergiat kasutusse võtaks. Esimeses nõudluskõvera variandis (puudujääk) jätame kogu ülejäänud kaevevõimekuse ja hankevõimekuse puutumata, teises variandis (kogu kütuse nõudluskõver) seame ülejäänud kaeve- ja hankevõimekuse nulli ning seadistame väärtusketi kasutama ainult ühte analüüsitavat kütust. Mõlemal juhul oleks vastava kütuse kaevevõimekus $+\infty$.
+
+Põhimõtteliselt saab sedasama nõudluskõverat lahendada ka varihindade kaudu. Sellisel juhul seaksime mudelis analüüsitava kütuse hinna nulliks ning kasutaks selle kütuse hinnastamisel vastava kaevevõimekuse varihinda. Siinjuures liiguksime me selle kütuse kaeve- või hankevõimekusega sammhaaval nullist pluss lõpmatuse suunas kuni reaalse sekundaarenergia tootmisvõimekuseni.
+\subsubsection{Arvutusloogika}
+
+\subsection{Elektri müügimarginaalid}
+\subsubsection{Üldine kirjeldus}
+Selle peatüki eesmärgiks on kirjeldada lahenduskäiku ja meetodeid, kuidas PCO arvutab lisafunktsionaalsusena välja marginaalid, millega elektri SPOT turule müümine peaks tagama optimaalse tootmisplaani. Kuna põlevkivi väärtusketil on risk töötada primaarenergia puudujäägi tingimustes, st. meie sekundaarenergia tootmisvõimekus ületab primaarenergia kogust, siis Energiakaubandusel on vaja teada, kui kõrge peaks olema minimaalne marginaal, millega tootmisüksuste toodangut turule müüa. Marginaal peab tagama, et me ei kasutaks olemasolevat primaarenergiat ära madalate turuhindade juures, kui optimaalne tootmisplaan kasutaks seda kütust tootmiseks kõrgemate turuhindade korral tulevikus. Oleme käesoleval hetkel nõus turule müüma, juhul kui praegune turusituatsioon tagaks marginaale, mis ületaks miinimume ja lubaks tuua vastava marginaaliga slotte n.ö. tulevikust ettepoole.
+
+\subsubsection{Lahenduse idee}
+
+PCO on lineaarplaneerimisülesanne ja selle eripära tõttu on ülesande ümber\-seadistamine või piirangute lisamine, mis arvutaks välja optimaalsed marginaalid, mittetriviaalne. Alternatiivina oskab meie kasutatav CPLEX optimeerimismootor teha tundlikkusanalüüsi sihifunktsiooni muutujatele ja ülesande piirangutele. CPLEXi tundlikkusanalüüsi funktsionaalsuse peale ongi marginaalide väja arvutamine üles ehitatud. Kaevevõimekust kirjeldavale piirangule optimeerimisülesandes arvutab mudel välja varihinnad\footnote{Varihinnad on teise nimega \emph{Lagrange} kordajad või ing. k. \emph{shadow price}}. 
+
+Varihindadel tundlikkusanalüüs on ehitatud vastama küsimusele ``kui palju muutub ülesande sihifunktsioon (muutuvkasum) siis, kui vastava piirangut (kaevevõimekus) kirjeldava võrratuse parem pool (päevane kaevevõimekus tonnides) suureneks ühe ühiku võrra?" Sisuliselt tähendab see vastavas kaevanduses vastaval kuul kaevandatud tonni kaevise marginaali. 
+
+Teades kaevise marginaali, st. seda hulka muutuvkasumi eurosid, mida viimane kaevandatud tonn kaevist meile toob, saame me, teades proportsioone ja kütteväärtuseid, millega kaevist tootestatakse ning tootmisüksusi, mis sellest sekundaarenergiat\footnote{Vaatleme siiski ainult elektrit, õli jaoks marginaale ei arvuta} toodavat, arvutada läbi kasuteguri sekundaarenergia marginaali vastavas tootmisüksuses.
+
+\subsubsection{Arvutusloogika}
+
+Arvutusloogika käib järgmise algoritmi järgi:
+
+Esimesed sammud arvutame CPLEX optimeerimismootoris:
+\begin{enumerate}
+\item Arvutame iga kaevanduse jaoks optimeeritava perioodi (harilikult jooksev 12 kuud) keskmise varihinna ühikus EUR/MWh. 
+\begin{equation}
+\bar{M_k} = \sum_t [M_{k,t} / (\Delta_{h,k} \cdot |t|]
+\end{equation}
+Kus $t$ on optimeeritavate päevade hulk, $|t|$ on päevade arv, $\Delta_h$ on vastavas kaevanduse $k$ kaevandatava kaevise või mäemassi kütteväärtus ja $M_{k,t}$ on selle kaevanduses päeval $t$ kehtiv kaevepiirangu varihind.
+
+Seega saame me kätte kui palju muutuks meie muutuvkasum keskmiselt, kui vastava kaevanduse päevane kaevevõimekus suureneks ühe MWh kütuse võrra või teisisõnu, mis on ühe MWh primaarenergia potentsiaalne kasumimarginaal meie jaoks.
+
+\item Primaarenergia varihindadest (marginaalidest) kaevanduses tuleb igale tootmisüksusele arvutada konkreetse tootmisüksuse põhised marginaalid, vastavalt primaarenergia kasutusele selles tootmisüksuses. 
+\begin{align}
+PE_{el} &= \sum_{t,k,p} PE_{t,el,k,p} \\
+PE_{k,p,el} &= \frac{\sum_{t} PE_{t,el,k,p}}{PE{el}} \\
+M_{el} &= \sum_{k,p} PE_{k,p,el} \cdot \bar{M_k} 
+\end{align}
+
+Ülaltoodud võrrandites tähistab $PE$ vastavat kütuse kasutust ja $M_{el}$ primaarenergia marginaali vastava tootmisüksuse jaoks. Võrrandite mõte on see, et me leiame igale konkreetsele primaarenergiale tema kasutamise osakaalu vastavas tootmisüksuses ja siis arvutame välja vastavalt nendele osakaaludele ja varem välja rehkendatud kaevandusepõhistele marginaalidele tootmisüksuste primaarenergia marginaalid.
+
+\item Lisaks arvutatud marginaalidele salvestama CPLEXist maha mudelis realiseerunud muutuvkulud ja referentshinnad. Keskmised kasutegurid primaarenergia sekundaarenergiaks teisendamiseks võtame eelmise aasta ajalooliste andmete pealt mudelist väljastpoolt. Edasised arvutused sekundaarenergia marginaalide jaoks teeme Excelis.
+
+\item Saamaks sekundaarenergia müügimarginaale, jagame primaarenergia marginaalid konkreetse tootmisüksuse realiseerunud keskmise kasuteguriga.
+
+\begin{equation}
+M^S_{el} = M_{el} \cdot \eta_{el}
+\end{equation}
+Kus $\eta_{el}$ tähistab vastava toomisüksuse keskmist realiseerunud kasutegurit eelmises perioodis (aastal).
+
+\item Olles välja arvutanud sekundaarenergia marginaali, anname ENKFÜSile lisaväljunditeks veel orienteeruvad müügihinnad, liites selle marginaali keskmistele muutuvkuludele.
+
+\end{enumerate}
+
+Seega, ülaltoodud punkte läbides saame me arvutuskäigu, mis primaarenergia puudujäägi korral arvutab selle puudujäägi varihinna (marginaali kaudu) vastavalt prognoositud kütuse kasutusele ja realiseerunud keskmistele kasuteguritele sekundaarenergia marginaali vastavas tootmisüksuses.
+
+Vaadates primaarenergia marginaalide ja muutuvkulude muutumise dü\-naami\-kat ühe tootmisplaani sees, on nad kogu perioodi vältel äärmiselt stabiilsed. Seega on ühe marginaalide taseme esitamine \emph{per} tootmisüksus kogu perioodiks lubatav üldistus.
+
+\subsubsection{Stsenaariumid ja hinnarisk}
+
+Lõpetuseks soovis ENK Füüsilise Kauplemise Osakond arvutada marginaale erinevate hinnatasemete juures kirjeldamaks hinnariski ja volatiilsust SPOT hinnas. Seega arvutame me ülalkirjeldatud metoodikaga marginaale tootmisüksustele kolmele hinnastsenaariumile : -10\%, standardstsenaariumi ja +10\%. Käesoleval hetkel on hinnanihked modelleeritud propotsionaalsena. See tähendab - ülemise ja alumise referentshindade aegrea saamiseks on hinnaprognoos läbi korrutatud vastavalt väärtustega 0.9 ja 1.1. 
+
+Marginaalide PCO kasutajaliideses arvutamise juhtnöörid on ENK AOK pannud kirja PCO kasutajaliidese juhendisse.
+
+\subsection{Püsikulude optimeerimine}
+Püsikulude optimeerimise juures on juba olemasolevale muutuvkuludel baseeruvale tootmisplaanile lisaks toodud veel püsikulude element, mida arvestades oskab mudel anda hinnanguid kas etteantud ajaperioodil tuleks tootmisüksust $i$ hoida käigus (ning kanda püsikulusid) või sulgeda see kogu antud ajaperioodiks (kuu, kvartal, aasta). Toomisüksuste juures mõtleme siinkohal peale elektritootmise plokkide ja õlitehase seadete ka kaevanduste ja karjääride osi, et võimaldada selliste olukordade modelleerimist, kus me vähendame Eesti Energia kaevevõimekust ning potentsiaalselt kompenseerime sellest tuleneva primaarenergia puudujäägi kontsernivälise kütuse hankega.
+
+\subsection{Stohhastiline optimeerimine}
+Mudeli stohhastiline variant on vajalik leidmaks parimad tootmisplaane ja eeldatavaid tootmiskoguseid, mis võtaks arvesse tegeliku elu juhuslikkust. Seega vastandina ülalkirjeldatud deterministlikule mudelile, kasutame me siin juhuslikkust sisaldavaid elektri, CO$_2$ ja õli hindu ning konstantsete avariilisuste asemel Poissoni protsessi abil genereeritud avariilissustenaariumeid. Lisaks neile juhuslikele protsessidele on veel stohhastilises mudelis võimalik läbi mängida binoomse jaotusega stsenaariumeid (st. kas etteantud ajahetkel sündmus juhtub või mitte). Kõik see on vajalik näiteks pikas perspektiivis tootmisüksuse tasuvuse analüüsiks. Juhuslikud protsessid ja nende genereerimine on kirjeldatud alampeatükis \ref{sec:stoch_gen}.
+
+Stohhastilist optimeerimist oleme me mudelisse kirjutanud kahel viisil: ühe- ja kaheastmelise mudelina. Esimeses variandis jooksutame mudeli läbi etteantud $n$ arvu kordi, kus igas kord koosneb erisugusest juhuslike protsesside realisatsioonist. Tulemuseks saame sisuliselt $n$ eraldi tulemust, mille pealt saab hinnata otsustusmuutujate jaotusfunktsioone. Sellise mudeliga saab hinnata tootmisüksuste tootmisplaanide jaotust, aga ta ei anna meile otsest jah/ei vastust (st. annab tõenäosuse), kas antud tootmisüksus antud ajahetkel avada või sulgeda. Samas on selline kuise resolutsiooniga mudel piisavalt kiire ja väikse mälukasutusega, et läbi jooksutada 1000+ simulatsiooni ning saada tulemuseks piisavalt ühtlased jaotusfunktsioonid. Selline deterministlik mudel on kirjeldatud alampeatükis \ref{sec:stoch_det}. 
+
+Selleks, et saada konkreetseid jah/ei vastused tootmisüksuste avamiste ja kinnipanemiste küsimustele ning et tekitada primaarenergia kaeve- ja hankeplaan, mis oleks optimaalne suvaliste turutingimuste ja avariilisuste juures, oli meil vaja luua kaheastmeline stohhastilise planeerimise mudel. Sellise mudeli juures tükeldasime formulatsiooni kaheks: esimes astmes on muutujad, mille väärtused on kõigi simulatsioonide juures samaks ning teises astmes on muutujad, mis võivad erinevate simulatsioonide juures erinevalt käituda. Sellisel juhul saame kindlad vastused tootmisvarade omamisele ja ka kaevele ning hankele, kuid selle hinnaks on oluliselt suurem lahendusaeg (kordades). Kaheastmeline stohhastiline mudel on realiseeritud standardse Benderi tükelduse kaudu, mille matemaatiline idee ja realiseerimine mudelis on kirjeldatud peatükis \ref{sec:stoch_bender}.
+
+\subsection{Stsenaariumite genereerimine}
+\label{sec:stoch_gen}
+\subsection{Deterministlik ekvivalent}
+\label{sec:stoch_det}
+\subsection{Benderi tükeldus (\emph{Benders' decomposition} ) }
+\label{sec:stoch_bender}
+
+% Lisada järeltöötluse kirjeldus
+\section{Järeltöötlus}
+\label{sec:jareltootlus}
+% Koodis on vaja iga võrrand refereerida siin kirjeldatud võrranditega.
+%\include{jareltootlus}
+
+\section{Mudeli seadistuse parameetrid}
+\label{sec:seadistus}
+\begin{table}
+\begin{tabular}{l c l}
+Parameeter & Formaat & Kirjeldus \\
+\hline
+\texttt{beg\_date} &  PPKKAAA       & Mudeli alguskuupäev \\
+\texttt{end\_date} &  PPKKAAA       & Mudeli lõpukuupäev  \\
+\texttt{slot}      &  \{T,PK,PV,K\} & Mudeli resolutsioon \\
+\texttt{fc}        &  \{true,false\}& Püsikulude modelleerimise sisselülitamine \\
+\texttt{fix\_st}   &  PPKKAAA       & Laoseisu fikseerimine etteantud kuupäevaks ja esimese perioodi opt.\\
+\texttt{hr}        &  \{true,false\}& Korstnate töötundide piirangu sisselülitamine \\
+\texttt{cw}        &  \{true,false\}& Jahutusvee piirangu sisselülitamine \\
+\texttt{mkul}      &  \{true,false\}& Suure muutuvkulude vaate arvutamine järeltöötluses \\
+\texttt{prc}       &  \{true,false\}& GV primaarenergia ostulepingute arvestamine \\
+\texttt{numsim}    &  $\mathbb{Z}^+$& Stohhastiliste simulatsioonide arv (1=deterministlik)\\
+\texttt{two\_stage}&  \{true,false\}& Kaheastmelise stohhastika sisselülitamine (Benders') \\
+\texttt{ys}        &  \{true,false\}& JARi ühtsete stsenaariumite hindade kasutamine\\
+\texttt{hedge}     &  \{true,false\}& Hedge funktsionaalsuse sisselülitamine \\
+\texttt{MT}        &  \{ST,OP\}     & Mudeli tüüp, kas standardmudel või operatiivmudel  \\ 
+\texttt{max\_marg} &  $\mathbb{Z}^+$  & Müügimarginaalide arvutamise päevade arv \\
+\texttt{m\_marg}   &  \{true,false\}  & Minimaalsete müügimarginaalide rakendamine \\
+\texttt{n\_price\_1}&  $\mathbb{R}^+$  & Nõudluskõvera alguspunkti hinnatase [EUR/MWh kütust]\\
+\texttt{n\_price\_2}&  $\mathbb{R}^+$  & Nõudluskõvera alguspunkti hinnatase [EUR/MWh kütust]\\
+\texttt{n\_price\_step}&$\mathbb{R}^+$  & Nõudluskõvera arvutamise sammu pikkus \\
+\texttt{n\_source} &  $m \in \mathcal{M}$  & Nõudluskõverale joonistatava kütuse allikas (kaevandus)\\
+\texttt{nk}        &  $e \in \mathcal{E}$  & Nõudluskõverale joonistatav kütus \\
+\texttt{nkl}       &  $e \in \mathcal{E}$  & Suurele nõudluskõverale joonistatav kütus \\
+\texttt{pk}        &  $e \in \mathcal{E}$  & Pakkumiskõverale joonistatav kütus \\
+\texttt{hm}        &  \{true,false\}& Kütuse heatmapi joonistamise kood \\
+\texttt{hm\_vkg}   &  \{true,false\}& Kontsentraadi hinnastamise heatmapi joonistamise kood \\   
+\\  
+\end{tabular}
+\caption{PCO mudeli üleüldise seadistuse parameetrid}
+\label{tab:conf_gen}
+\end{table}
+
+\begin{table}
+\begin{tabular}{l c l}
+Parameeter & Formaat & Kirjeldus \\
+\hline
+\texttt{sc}              &  \{true,false\}&  Käivituskuludega arvestamine \\
+\texttt{inventory}       &  \{true,false\}&  Perioodi lõpu laojäägi väärtustamise sisselülitamine\\
+\texttt{cleanings}       &  \{true,false\}&  Katelde puhastuste optimeerimine \\
+\texttt{oil}             &  \{true,false\}&  Õli tootmine ja müük\\
+\texttt{ht}              &  \{true,false\}&  Soojuse tootmine ja müük\\
+\texttt{sales}           &  \{true,false\}&  Tükikivi müük \\
+\texttt{logistics}       &  \{true,false\}&  Logistikaliinide sisselülitamine \\
+\texttt{storage}         &  \{true,false\}&  Ladustamise sisselülitamine \\
+\texttt{mine\_storage}   &  \{true,false\}&  Kaevanduste ladude sisselülitamine \\
+\texttt{prod\_storage}   &  \{true,false\}&  Tootmisüksuste ladude sisselülitamine \\
+\texttt{mines}           &  \{true,false\}&  Kaevanduste ja GV hanke sisselülitamine \\
+\texttt{rg\_balance}     &  \{true,false\}&  Uttegaasi bilansi sisselülitamine \\
+\texttt{rg\_division}    &  \{true,false\}&  Uttegaasi proportsionaalse kasutuse sisselülitamine\\
+\texttt{mx\_schedule}    &  \{true,false\}&  Remondigraafiku optimeerimine \\
+\texttt{discounting}     &  \{true,false\}&  Rahavoogude diskonteerimine nüüdisväärtusse\\
+\texttt{l\_k\_invoked}   &  \{true,false\}&  Killustiku ja lubja kasutuse sisselülitamine \\
+\texttt{heat\_free}      &  \{true,false\}&  Soojuse miinimumtarne kohustuse väljalülitamine \\
+\texttt{kkt\_free}       &  \{true,false\}&  KKT miinimumostu kohustuse väljalülitamine \\
+\texttt{el\_free}        &  \{true,false\}&  Minimaalse elektritootmiskoguse väljalülitamine \\
+\texttt{scen}            &  \{true,false\}&  Stohhastika riskistsenaariumite kasutamine \\
+\texttt{max\_cpu}        &  $\mathbb{Z}^+$&  Tuumade arv paralleelse optimeerimise jaoks \\
+\\  
+\end{tabular}
+\caption{PCO mudeli seadistuse parameetrid, mis üldiselt muutmist ei vaja}
+\label{tab:conf_spec}
+\end{table}
+
+
+\appendix
+\include{parameetrid}
+\include{failid}
+\include{makrod}
+\include{konstandid}
+\end{document}

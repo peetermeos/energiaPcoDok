@@ -6,7 +6,8 @@ Sümbol & Kirjeldus & Vaste koodis\\
 $\mathcal{A}$ & Aastate hulk $A \in \mathcal{A}: \mathcal{A}=\{2013\dots 2030\}$ & \texttt{year} \\
 $\mathcal{K}$ & Kuude hulk $\kappa \in \mathcal{K}: \mathcal{K} = \{1\dots 12\}$ & \texttt{month} \\
 $\mathcal{Q}$ & Kvartalite hulk $\chi \in \mathcal{Q}: \mathcal{Q} = \{1\dots 4\}$ & \texttt{quarter}\\
-$\mathcal{P}_{max}$ & Päevade koguhulk mudelis $\phi,\phi' \in \mathcal{P}_{max} : \mathcal{P}_{max} = \{1\dots n\}$ & \texttt{time\_t}, \texttt{time\_t2}\\
+$\mathcal{Dc}$ & Kalendripäevade hulk $dc \in \mathcal{Dc}: \mathcal{Dc} = \{1\dots 31\}$ & \texttt{day}\\
+$\mathcal{P}_{max}$ & Päevade koguhulk mudelis $\i,\i' \in \mathcal{P}_{max} : \mathcal{P}_{max} = \{1\dots n\}$ & \texttt{time\_t}, \texttt{time\_t2}\\
 $\mathcal{W}$ & Tööpäevade hulk $\nu \in \mathcal{W}: \mathcal{W} = \{1\dots 7\}$ & \texttt{weekday}\\
 $\mathcal{P}$ & Modelleeritud päevade alamhulk mudelis $i \in \mathcal{P}: \mathcal{P} \subset \mathcal{P}_{max}$ & \texttt{time\_t\_s}\\
 $\mathcal{H}$ & Tundide hulk $h \in \mathcal{H}: \mathcal{H} = \{1\dots 24\}$  & \texttt{time\_hour}\\
@@ -19,10 +20,11 @@ $\mathcal{E}_{pk}$ & Põlevkivi alamhulk primaarenergiates $\mathcal{E}_{pk} \su
 
 %%%%%%% Kaevandused ja logistika
 $\mathcal{M} $  & Kaevanduste hulk $m, m' \in \mathcal{M}:\mathcal{M}=\{\mathrm{Estonia, Viivikonna,}\dots \mathrm{,Narva}\}$ & \texttt{k}, \texttt{k2}\\
-$\mathcal{C}$   & Primaarenergia ostulepingute hulk $c \in \mathcal{C} = \{1\dots c_{max}\}$ & \texttt{contract} \\
+$\mathcal{M}_{enr}$  & Kaevanduste hulk $m, \in \mathcal{M}_{enr}:\mathcal{M}\subset \mathcal{M}$ & \texttt{k\_enrichment}\\
+$\mathcal{C}$   & Ostulepingute hulk $c \in \mathcal{C} = \{1\dots c_{max}\}$ & \texttt{contract} \\
 $\mathcal{L}$   & Ladude hulk $l \in \mathcal{L}:\mathcal{L}=\{\mathrm{Estonia_M}\dots\mathrm{BEJ_M}\}$ & \texttt{storage}\\
-$\mathcal{L}_k$ & Kaevanduste ladude hulk $l_k \in \mathcal{L}_k \subset \mathcal{L}$ & \texttt{storage\_k} \\
-$\mathcal{L}_t$ & Tootmisüksuste ladude hulk $l_t \in \mathcal{L}_t \subset \mathcal{L}$ & \texttt{storage\_t} \\
+$\mathcal{L}_k$ & Kaevanduste ladude hulk $l_k \in \mathcal{L}_k \subset \mathcal{L}$ & \texttt{s\_k} \\
+$\mathcal{L}_t$ & Tootmisüksuste ladude hulk $l_t \in \mathcal{L}_t \subset \mathcal{L}$ & \texttt{s\_t} \\
 $\mathcal{R}$   & Logistikaliinide hulk $\rho \in \mathcal{R}:\mathcal{R}=\{\mathrm{Estonia-EEJ},\dots ,\mathrm{Narva-BEJ}\}$ & \texttt{route}\\
 
 % Tootmise hulgad
@@ -44,6 +46,9 @@ $\mathcal{U}$   & Mõõtühikute hulk &\texttt{unit} \\
 $\mathcal{Z}^{num}$ & Remontide järjekorranumbrite hulk remondiplaanis $z^{num} \in \mathbb{Z}^+$ & \texttt{r\_num} \\
 $\mathcal{Z}^{kp}$  & Remondi algus- ja lõpukuupäevade indeks $z^{kp} \in \{algus, lopp\}$ & \texttt{r\_kp} \\ 
 $\mathcal{FW}$ & Hedge \emph{forwardi} ajaperiood $fw \in \{year, quarter, month\}$ & \texttt{fwd\_type} \\
+$\mathcal{C}^{para}$& Primaarenergia ostulepingute parameetrite hulk $\{kogus, hind\}$ & \texttt{contract\_para} \\
+$\Pi$& Tükati lineariseerimise lõikude hulk & \texttt{para\_lk} \\
+$\xi$& Tükati lineariseerimise lõiku lõppunktide dimensioonid $\{a,b\}$ & \texttt{para\_kt} \\
 \end{tabular}
 \caption{Optimeerimismudelit kirjeldavad hulgad \label{tab:hulgad}}
 \end{table}

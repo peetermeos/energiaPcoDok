@@ -23,10 +23,11 @@ Eesti Energia AS}
 \listoftables
 
 \section{Sissejuhatus}
-Suures plaanis on selle käesoleva kirjatüki ülesanne panna kirja ENK põ\-lev\-kivi väärtusketi optimeerimismudeli matemaatiline formulatsioon. See tekst ei käsitle ülesande lahendusalgoritme ning meetodeid vaid sisuliselt kirjeldab vaid põlev\-kivi väärtusketi muutuvkasumi maksimeerimisülesande sihifunktsiooni, pii\-ranguid ja muutujaid. Kõigepealt kirjeldame standardset väärtusketi pla\-neeri\-mis\-ülesannet.Üles\-ande laiendused või kujumuudatused, mis arvu\-tavad väl\-ja elek\-tri\-turule pakkumiste tegemise optimaalseid marginaale, primaarenergia hankimise nõudlus\-kõveraid või primaar\-energia müügi pakkumiskõveraid ja riski, on kajastatud peatükis \ref{sec:lisad}. Lisaks sellele kirjeldame peatükis \ref{sec:jareltootlus} mudeli väljundi pealt lõpp\-kasutaja vaadete arvutamist.
+Suures plaanis on selle käesoleva kirjatüki ülesanne panna kirja ENK põ\-lev\-kivi väärtusketi optimeerimismudeli matemaatiline formulatsioon. See tekst ei käsitle ülesande lahendusalgoritme ning meetodeid vaid sisuliselt kirjeldab vaid põlev\-kivi väärtusketi muutuvkasumi maksimeerimisülesande sihifunktsiooni, pii\-ranguid ja muutujaid. Lahendusalgoritmid on spetsiifiline teema, mida võib juurde lugeda raamatutest \cite{Hillier1995}, \cite{Rardin2000} ja \cite{Nodecal1999}\footnote{Kõik raamatud on ENKis riiulilt võtta ja laenata}. Kõigepealt kirjeldame standardset väärtusketi pla\-neeri\-mis\-ülesannet.Üles\-ande laiendused või kujumuudatused, mis arvu\-tavad väl\-ja elek\-tri\-turule pakkumiste tegemise optimaalseid marginaale, primaarenergia hankimise nõudlus\-kõveraid või primaar\-energia müügi pakkumis\-kõveraid ja riski, on kajastatud peatükis \ref{sec:lisad}. Lisaks sellele kirjeldame peatükis \ref{sec:jareltootlus} mudeli väljundi pealt lõpp\-kasutaja vaadete arvutamist. See kirjatükk ei sisalda PCO kasutajaliidese kasutajajuhendit, mis on eraldi dokument ENKi PCO portaalis\footnote{\texttt{http://http://enk/projects/pco/default.aspx}}.
 
 \subsection{Terminid ja notatsioon}
-Kuna PCOs on palju hulki, parameetreid, muutujaid ja tuplesid läbisegi, siis  järgnev peatükk kirjeldab lühidalt siin tekstis kasutatud fontide ja terminite tähendust. Dokumentatsiooni mõte on ära seletada PCO matemaatika (võrran\-did ja võrratused) ning siduda ära see reaalse koodiga. Kõik koodi väljavõtted on tehtud sellise \texttt{trükimasina fondiga}. Matemaatika jaoks on kasutatud järgmisi fonte:
+\label{sec:terminid}
+Kuna PCOs on palju hulki, parameetreid, muutujaid ja tuplesid läbisegi, siis  järgnev peatükk kirjeldab lühidalt siin tekstis kasutatud fontide ja terminite tähendust. Dokumentatsiooni mõte on ära seletada PCO matemaatika (võrran\-did ja võrratused) ning siduda ära see reaalse koodiga. Kõik koodi väljavõtted on tehtud sellise \texttt{trükimasina fondiga}, koodis protsendimärkide vahel on PCO seadistuse parameetrid, vt. \ref{sec:seadistus} (nt. \texttt{\%prod\_storage\%}). Matemaatika jaoks on kasutatud järgmisi fonte:
 \begin{itemize}
 \item Hulgad on kirjeldatud kalligraafilise fondi ja suure tähega nagu näiteks järgmine hulk $\mathcal{W}$. Hulkade elemendid on väikeste tähtede ja hariliku fondiga: $w \in \mathcal{W}$
 \item Optimeerimisülesande muutujad on tähistatud hariliku suure tähega ja indekseeritud hulkade elementidega $R(i,j,k)$
@@ -42,15 +43,15 @@ Kui tekstis tuleb ette ingliskeelseid termineid, mida ma ei ole osanud korraliku
 Üldises vaates koosneb optimeerimismudel ühest suurest sihifunktsioonist ja piirangutest. Sihifunktsioon on lineaarne sisaldab endas iga optimeeritava ajaperioodi (üldiselt 1 päev) muutuvkasumite summat\footnote{Muutuvkasum terminina on ebastandardne ning ilmselt kasutuses ainult Eesti Energias. Muutuvkasum on sisuliselt müügitulud, millest on muutuvkulud maha lahutatud. Muutuvkasum ei arvesta püsikulude, kulumi ja kapitalikulude mõjuga.}. Piirangud on samuti lineaarsed. Nii sihifunktsiooni kui ka piirangute puhul saab optimeeritavat väärtusketti jagada jämedalt kolmeks järjestikuseks elemendiks:
 
 \begin{itemize}
-\item primaarenergia kaevandamine, rikastamine ja hankimine
+\item primaarenergia kaevandamine, rikastamine, hankimine ja müük
 \item logistika ja laod
-\item sekundaarenergia tootmine 
-\item sekundaarenergia müük
+\item sekundaarenergia tootmine (elekter, õli, soojus)
+\item sekundaarenergia müük 
 \end{itemize}
 
 Esimesed kolm elementi ülaltoodud nimistus on kulusid kirjeldavad otsustusmuutujad ning viimane, müügi komponent kirjeldab tulusid. Lisaks sellele on mudelis veel üldiseid elemente, mida kasutavad kõik kolm ülaltoodud valdkonda. Sellisteks on näiteks kalendriaja arvestus optimeerimismudeli ajaperioodideks ja muutuvkasumi diskonteerimine nüüdisväärtuseks.
 
-Optimeerimismudelit on võimalik kasutada erinevates seadetes, lülitades välja võimekusi või lisades kütuseid. Selline seadete sättimine on tehtud sisuliselt vastavate piirangute sisse- või väljalülitamisega optimeerimisülesande võrrandi\-süsteemi. Nende lülitamise mehhaanika on pigem infotehnoloogiline ülesanne ja jääb selle kirjatüki skoobist välja. Ülevaate saamiseks mudeli kasutamise kohta, loe mudeli kasutusjuhendit, mis peaks olema üleva Energiakaubanduse Wikis.
+Optimeerimismudelit on võimalik kasutada erinevates seadetes, lülitades välja võimekusi või lisades kütuseid. Selline seadete sättimine on tehtud sisuliselt vastavate piirangute sisse- või väljalülitamisega optimeerimisülesande võrrandi\-süsteemi. Nende lülitamise mehhaanika on pigem infotehnoloogiline ülesanne ja jääb selle kirjatüki skoobist välja. Ülevaate saamiseks mudeli kasutamise kohta, loe mudeli kasutusjuhendit, mis peaks olema üleva Energiakaubanduse Wikis (\texttt{http://confluence.energia.sise/confluence/display/EW/ENK+Wiki+Home}).
 
 Formulatsioon on jaotatud GAMS koodifailide vahele, eraldades eel- ja järel\-töötluse, struktuurid, sihifunktsiooni, piirangud ja lisaalgoritmid. Failid ja nende sisu on kirjeldatud tabelis lisas \ref{app:failid}. Koodi loetavuse ja lühiduse huvides on võimalikult palju korduvaid koodielemente kirjutatud makrodeks mis on ära toodud selle kirjatüki lisas \ref{app:makrod}
 
@@ -59,23 +60,24 @@ Formulatsioon on jaotatud GAMS koodifailide vahele, eraldades eel- ja järel\-t�
 Mudel töötab praegu suuremas osas päeva täpsusega mudelina.
 
 Kaevandamine, logistika, õli tootmine ja tükikivi müük on modelleeritud päevase resolutsiooniga. Kuna elektri hind muutub päeva sees oluliselt, siis on võimalik elektri tootmist modelleerida maksimaalselt ühe tunni täpsusega, kuid see lisaks mudelile liigset keerukust. Üldiselt on annab ilmselt elektri  päevasiseselt \emph{peak} ja \emph{off-peak} vormis modelleerimine piisava täpsuse. Nüüd ja edas\-pidi tähistab indeks $i$ vastavat ajaperioodi, mis harilikult on üks päev, elektritoomise juures aga üks slott (ehk siis kas üks päev või peenemas vormingus \emph{peak} või \emph{off-peak}).
-Ülalmainitud väite juures on üks erand - mudeli viimane versioon võimaldab kasutada väikseima ajaühikuna  ühte kuud, mis on jagatud kolmeks slotiks (\emph{peak}, \emph{off-peak} ja \emph{weekend}). Sellises mudeli seades on ka kaevandamine, logistika ja õli tootmine kuu resolutsiooniga ning elektri tootmine siis vastava sloti täpsusega. Kuna sellisel juhul ei ole slotid kuu sees alati ranges ajalises järjestuses, toob selline mudeli seadistus kaasa mõningaid iseärasusi, mis on kirjeldatud peatükus \ref{sec:lisad}. Kuna mudelis on vaja siduda mudeli ajaühik $i$ kalendriajaga (aasta $A$ ja kuu $\kappa$ muutuvkulude, tarnekoguste ja turuhindade jaoks), siis mudelis on selle seose jaoks tuple $cal(i, A, \kappa)$ koodis \texttt{date\_cal(time\_t, year, month)} või makro kaudu lühidalt \texttt{y\_m\_t}. Kõik tupled on kirjeldatud tabelis \ref{tab:tupled}.
+Ülalmainitud väite juures on üks erand - mudeli versioonid TFS Changeset 2009 alates võimaldavad kasutada väikseima ajaühikuna  ühte kuud, mis on jagatud kolmeks slotiks (\emph{peak}, \emph{off-peak} ja \emph{weekend}). Sellises mudeli seades on ka kaevandamine, logistika ja õli tootmine kuu resolutsiooniga ning elektri tootmine siis vastava sloti täpsusega. Kuna sellisel juhul ei ole slotid kuu sees alati ranges ajalises järjestuses, toob selline mudeli seadistus kaasa mõningaid iseärasusi, mis on kirjeldatud peatükus \ref{sec:lisad}. Kuna mudelis on vaja siduda mudeli ajaühik $\i \in \mathcal{P}_{max}$ kalendriajaga (aasta $\mathcal{A}$ ja kuu $\mathcal{K}$ muutuvkulude, tarnekoguste ja turuhindade jaoks), siis mudelis on selle seose jaoks tuple $\langle i, \mathcal{A}, \mathcal{K} \rangle$ koodis \texttt{date\_cal(time\_t, year, month)} või makro kaudu lühidalt \texttt{y\_m\_t}. Kõik tupled on kirjeldatud tabelis \ref{tab:tupled} ja makrod lisas \ref{app:makrod}.
 
 \subsection{Diskonteerimine}
-Selleks, et väärtustada lähituleviku muutuvkasumit enam kui tuleviku muutuvkasumit\footnote{Varblane käes ja tuvi katusel}, on mudelis võimalus vastavalt etteantud aastasele intressimäärale\footnote{ehk siis WACC, \emph{Weighted Average Cost of Capital}} $r$ tuua tulevikuperioodide muutuvkasumid $K_i$ tänasesse päeva vastavalt järgnevale valemile, millega me korrutame läbi sihifunktsiooni elemendid.
+Selleks, et väärtustada lähituleviku muutuvkasumit enam kui tuleviku muutuvkasumit\footnote{Varblane käes ja tuvi katusel}, on mudelis võimalus vastavalt etteantud aastasele intressimäärale\footnote{ehk siis WACC, \emph{Weighted Average Cost of Capital}} $r$ tuua tulevikuperioodide muutuvkasumid $Xi_i$ tänasesse päeva vastavalt järgnevale valemile, millega me korrutame läbi sihifunktsiooni elemendid.
 \begin{equation}
-K_{tot} = \sum_i \frac{K_i}{\prod_{j=1}^i(1+r)/365}
+\Xi_{tot} = \sum_i \frac{\Xi_i}{\prod_{j=1}^i(1+r/365)}
 \end{equation}
-Kuna algsed ajaperioodide muutuvkasumid on jätkuvalt muutujates $K_i$, siis on hilisem kuiste ja aastaste muutuvkasumite summeerimine ilma diskonteerimist arvestamata jätkuvalt lihtsalt tehtav.
+Kuna algsed ajaperioodide muutuvkasumid on jätkuvalt muutujates $\Xi_i$, siis on hilisem kuiste ja aastaste muutuvkasumite summeerimine ilma diskonteerimist arvestamata jätkuvalt lihtsalt tehtav.
 Koodis on see sihifunktsiooni element toodud järgnevalt:
 \begin{verbatim}
 / prod((time_t2, year, month)$(date_cal(time_t2, year, month)
                            and ord(time_t2) le ord(time_t)),
       (1 + wacc/365))
 \end{verbatim}
+Kuna sihifunktsioon on summa üle optimeeritavate perioodide (kuu või päev) ning diskonteerida tuleb samuti üle perioodide, siis kahe üksteise sees oleva hulgatehte (summerimine ja korrutamine) üle sama indeksi $i$ saavutamiseks on koodis kasutatud korrutamise juures \emph{aliast} \texttt{time\_t2}, mis on ekvivalentne \texttt{time\_t}'ga. Intressimäär $r$ on indekseeritud üle aastate $\mathcal{A}$.
 
 \subsection{Hulgad ja otsustusmuutujad koos tähistustega}
-Järgnev tabel üritab anda ülevaadet siin kirjelduses kasutatavast notatsioonist. Kuna muutujaid ja parameetreid on suhteliselt palju, siis võib vabalt juhtuda, erinevates kontekstides me kasutame sama tähist erineva sisuga. Primaarenergia kaevandmise, hankimise ja logistika muutujad on ära toodud tabelis \ref{tab:k_muutujad} ning sekundaarenergia otsustusmuutujad on tabelis \ref{tab:t_muutujad}.
+Järgnev tabel üritab anda ülevaadet siin kirjelduses kasutatavast notatsioonist. Kuna muutujaid ja parameetreid on suhteliselt palju, on oht, e erinevas kontekstis sama sümbol kordub kuid on erineva sisuga. Olen üritanud sellist korduvkasutamist vältida, aga kui seda siiski ette tuleb, siis palun anda märku ja me üritame ennast parandada. Nagu peatükis \ref{sec:terminid} kirjeldatud, omavad erineva fondiga kirjutatud sümbolid erinevaid tähendusi. Seda öelnuda, primaarenergia kaevandmise, hankimise ja logistika muutujad on ära toodud tabelis \ref{tab:k_muutujad} ning sekundaarenergia otsustusmuutujad on tabelis \ref{tab:t_muutujad}.
 
 \include{hulgad}
 \include{tupled}
@@ -125,6 +127,7 @@ Need kolm sihifunktsiooni elementi on koodis kirjeldatud järgnevalt.
     * cv(feedstock, k, "MWh")
   )
 \end{verbatim}
+Koodis on vajalik tähele panna, et kuna karjääri tootestamine toimub primaarenergiast (kaevis) teise primaarenergiasse (nt. 8.4 MJ/kg kivi), siis on vajalik kahekordne summeerimine üle primaarenergiate hulga $\mathcal{E}$, koodis on tehtud üle indeksi \texttt{feedstock} ja selle \emph{aliase} \texttt{p2}. Sisendis on hankelepingute hinnad antud primaarenergiale (st. ühikuks on EUR/MWh).
 
 \subsection{Karjäärid}
 % Siia lisada muutuvkulude arvutamise kirjeldus
@@ -132,7 +135,7 @@ Karjäärides, kus ei ole rikastusvabrikut, ütleb mudel, et 1 tonnist 7.0 MJ/kg
 
 \begin{figure}
 \include{karjaari_pilt}
-\caption{Mäemassi tootestamine karjääris
+\caption{Mäemassi tootestamine karjääris. NB! Kaevandustes tootestamine on modelleritud erinevalt.
 \label{joon1}}
 \end{figure}
 
@@ -142,13 +145,30 @@ Seega väljaminevate toodete kogus tonnides peab kokku summeeruma järgne\-valt
 \sum_{tooted} \frac{kogus_{toode} [t]}{koefitsent_{toode} [\%]} \le kaeve_{max} [t]
 \end{equation}
 
-See võrratus peab paika pidama igal planeeritaval päeval. Ülalmainitud koefitsenti tähistatakse siinses kirjelduses $\mathit{\alpha}_e$ ning koodis \texttt{enrichment\_coef}.
+\begin{verbatim}
+v_k_fs_mined(time_t, k, feedstock)$(time_t_s(time_t)
+                                and not sameas(k, "Hange")
+                                and k_mines(k, feedstock))..
+   sum(p2$fs_k(k, p2), fs_mined(time_t, feedstock, p2, k))
+                     $((not sameas(k, "Hange")) 
+                   and (not k_enrichment(k)))
+   +
+   raw_shale(time_t, k)$(k_enrichment(k))
+   =l=
+* Daily maximal amount must be divided by working days in given month
+   (sum((year, month)$y_m_t, max_mining_cap(k, feedstock, year, month)
+                          / monthly_workdays(year, month, k))
+   )$(sum((year, month)$y_m_t, monthly_workdays(year, month, k) > 0))
+;
+\end{verbatim}
+
+See võrratus peab paika pidama igal planeeritaval päeval. Ülalmainitud koefitsenti tähistatakse siinses kirjelduses $\mathit{\alpha}_e$ ning koodis \texttt{enrichment\_coef} (konstant, antud sisendparameetrina).
 
 \subsection{Kaevandused}
 % Siia tuleb nagu karjäärilgi lisada muutuvkulude arvutus
 Estonia kaevanduses tuleb vastandina karjäärile modelleerida rikastusvabrikut. Rikastusvabriku protsess on modelleeritud mudelis kahe sammuna. Kõigepealt jagab mudel kaevandatud mäemassi kolmeks: aheraine, sõelis ja kontsentraat. Aherainet on mäemassis 42\% per tonn ($\mathit{\alpha_a}$), kontsentraati on mäemassis 23\% per mäemassi tonn ($\mathit{\alpha_k}$) ning kõik ülejäänu (35\% $\mathit{\alpha_s}$ mäemassi tonnist) moodustab sõelis. Nendest kolmest komponendist kombineerime kokku tooted. Selgituseks vaata joonist \ref{joon2}.
 
-Seega iga päev peavad paika pidama võrratused, mis ütlevad, et nende kolme komponendi kasutamine protsessis peab mahtuma päevase kaevandatud mäemassi sisse:
+Seega iga päev peavad paika pidama võrratused, mis ütlevad, et nende kolme komponendi kasutamine protsessis peab mahtuma päevase kaevandatud mäemassi sisse (ühikud alati tonnides). Järgnevad võrratused ja kood kehtivad kaevandustele, kus on rikastusvabrik, st. primaarenergia allikate alamhulgale $\mathcal{M}_{enr}$, koodis \texttt{k\_enrichment}.
 
 \begin{align}
 \sum_e R^a_{i,e} &\le \mathit{\alpha_a} \cdot M_{i,k} & \forall i \\
@@ -176,7 +196,7 @@ sum(feedstock$fs_k(k, feedstock), cont_p(time_t, k, feedstock))
 \end{figure}
 
 
-Kontsentraat ja sõelis summeeruvad nii energeetiliselt kui ma koguseliselt kokku kaubapõlevkiviks, mida on 58\% kaevandatavast mäemassist. Nendest kolmest komponendist paneme kokku kaevandusest välja minevad tooted. Toodete massid ja primaarenergia kogused peavad kokku summeeruma komponentide massidest ja primaarenergia kogustest. VKGle tehtav tükikivi tarne näiteks sisaldab selletõttu ainult kontsentraati, kuna nõutava toote kütteväärtust saab seda ainult kontsetraadist kokku segades, teise komponentide osakaalud on nullid. Seega on meil iga kaevandusest välja mineva toote jaoks olemas sellised võrratused välja mineva toote ja selle segamiseks vajalike komponentide kohta:
+Kontsentraat ja sõelis summeeruvad nii energeetiliselt kui ma koguseliselt kokku kaubapõlevkiviks, mida on umbkaudu 58\% kaevandatavast mäemassist\footnote{See protsent praktikas kõigub sõltuvalt konkreetsest primaarenergia tellimusest: juhul kui me aherainet toodetesse sisse ei sega, tuleb kontsentraadi ja sõelise summa max 58\% mäemassist, aheraine sisse segamise puhul see osakaal suureneb.}. Nendest kolmest komponendist paneme kokku kaevandusest välja minevad tooted. Toodete massid ja primaarenergia kogused peavad kokku summeeruma komponentide massidest ja primaarenergia kogustest. VKGle tehtav tükikivi tarne näiteks sisaldab selletõttu ainult kontsentraati, kuna nõutava toote kütteväärtust saab seda ainult kontsetraadist kokku segades, teise komponentide osakaalud on nullid. Seega on meil iga kaevandusest välja mineva toote jaoks olemas sellised võrratused välja mineva toote ja selle segamiseks vajalike komponentide kohta:
 
 \begin{align}
 toode [t] & = R^a_{i,e} + R^k_{i,e} + R^s_{i,e} \nonumber \\
@@ -185,10 +205,9 @@ toode [t] & = R^a_{i,e} + R^k_{i,e} + R^s_{i,e} \nonumber \\
 &+ \frac{6.459 [MJ/kg]}{3.6} \cdot R^s_{i,e}
 \end{align}
 
-$kv_{toode}$ tähistab tarnitava primaarenergia toote kütteväärtust [MJ/kg].
+$kv_{toode}$ tähistab tarnitava primaarenergia toote kütteväärtust ühikuga MJ/kg. Pane tähele, et ülaltoodud valemis kasutan ma loetavuse huvides kütteväärtuse ühikut MJ/kg, kuna see on kommunikatsioonis suurusjärkude tõttu üldkasutatav. Formulatsioonis (koodis) on lühiduse mõttes kasutatud MWh/t, sest kõik primaarenergia kogused massina on alati tahke- ja vedelkütuste puhul tonnides, mitte kilogrammides.
 
 \begin{verbatim}
-
 v_enrichment1(time_t, k, feedstock)$(time_t_s(time_t)
                                  and fs_k(k, feedstock) and k_enrichment(k))..
   cv(feedstock, k, "MWh")  * fs_mined(time_t, "Kaevis", feedstock, k)
@@ -218,7 +237,7 @@ Mudeli logistika käsitlus on kaetud eraldi tekstina. Lühikirjeldusena öeldes 
 \sum_{\rho} F^{logistikasse}_{e,i,\rho} &< M^h_{i,e} & \forall i,e 
 \end{align}
 
-Ülaltoodud võrrandis tähistab $c_e(e', e)$ rikastuskoefitsenti, millega mudel arvutab kaevandatava primaarenergia $e'$ tootestatavasse primaarenergiasse $e$. Hankekütusel on selle väärtus $1.0$ ning seega võib see võrratusest välja jääda. Logistikale jaotatakse nii kaevandustest ja karjääridest kaevandatud kütus kui ka GV hankega saadud kütus. NB! Benderi tükelduse puhul on vajalik hoida kaevemahud üle simulatsioonide konstantsed (st. Benderi esimene faas). Selletõttu on vaja siin sisuliselt kahte erinevat piirangu konfiguratsiooni \emph{Benders' decompositioni} ja hariliku deterministliku planeerimise jaoks. Vaata täpsemalt peatükki \ref{sec:stoch_bender}.
+Ülaltoodud võrrandis tähistab $c_e(e', e)$ rikastuskoefitsenti, millega mudel arvutab kaevandatava primaarenergia $e'$ tootestatavasse primaarenergiasse $e$. Hankekütusel on selle väärtus $1.0$ ning seega võib see võrratusest välja jääda. Logistikale jaotatakse nii kaevandustest ja karjääridest kaevandatud kütus kui ka GV hankega saadud kütus. NB! Benderi tükelduse puhul on vajalik hoida kaevemahud üle simulatsioonide konstantsed (st. Benderi esimene faas). Selletõttu on vaja siin sisuliselt kahte erinevat piirangu konfiguratsiooni \emph{Benders' decompositioni} ja hariliku deterministliku planeerimise jaoks, sest tükeldatud konfiguratsiooni puhul grupisisene kütuse tellimus stabiilseks üle simulatsioonide. Ehk siis - see piirang on üks \emph{Bender'si complicating constraint} piirangutest, mis lahendatakse peaülesandes, mitte alamülesannetes. Vaata täpsemalt peatükki \ref{sec:stoch_bender}.
 \begin{verbatim}
 v_mining_dist(time_t, feedstock, k)$(time_t_s(time_t)
                                            and fs_k(k, feedstock)
@@ -270,8 +289,8 @@ Sihifunktsioonis on kajastatud logistika kahes elemendis, logistikakulud logisti
 
 \begin{align}
 \sum_{liin} \bigg[\sum_e \bigg( F^{logistikasse}_{e,i,liin} + F^{laost}_{e,i,liin} \bigg)\cdot P_{liin} \bigg] &\forall i \label{vls1} \\
-\sum_{e} \bigg[ F^{lattu}_{e,i,l_k} + F^{laost}_{e,i,l_k} \bigg] &\forall i,l_k \label{vls2} \\
-\sum_{e} \bigg[ F^{lattu}_{e,i,l_t} + F^{laost}_{e,i,l_t} \bigg] &\forall i,l_t \label{vls3} 
+\sum_{e} \bigg[ F^{lattu}_{e,i,l_k} + F^{laost}_{e,i,l_k} \bigg] &\forall i\in\mathcal{P}_{max},l_k\in\mathcal{L}_k \label{vls2} \\
+\sum_{e} \bigg[ F^{lattu}_{e,i,l_t} + F^{laost}_{e,i,l_t} \bigg] &\forall i\in\mathcal{P}_{max},l_t\in\mathcal{L}_t \label{vls3} 
 \end{align}
 Esimene sihifunktsiooni element \eqref{vls1} kajastab liinide logistika muutuvkulusid per tonn, järgmised \eqref{vls2} ja \eqref{vls3} kajastavad kaevanduste ja tootmisüksuste ladudest väljavõtmise ja ladustamise kulusid.
 
@@ -294,7 +313,7 @@ sum((year, month, route, feedstock, s_k, k)$(
      and fs_k(k, feedstock)
      ),
      log_vc(route, year) *
-     storage_to_logs(time_t, s_k, route, feedstock)
+     storage_to_logs(time_t, storage_k, route, feedstock)
      )
 $endif.two
 * Storage costs at mines
@@ -1383,4 +1402,7 @@ Parameeter & Formaat & Kirjeldus \\
 \include{failid}
 \include{makrod}
 \include{konstandid}
+
+\bibliographystyle{plain}
+\bibliography{kirjandus}{}
 \end{document}

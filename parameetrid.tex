@@ -18,9 +18,8 @@ $S^s_l(\mathcal{P}, \mathcal{S}, \mathcal{T})$  & Sloti pikkus tundides, korrige
 $D_m(\mathcal{K})$ & Päevade arv kalendrikuus   & pv & \texttt{days\_in\_month} \\
 $D_y(\mathcal{A})$ & Päevade arv kalendriaastas & pv & \texttt{days\_in\_year} \\
 $D_t(\mathcal{P})$ & Päeva tüüp (0-tööpäev, 1-laupäev, 2-püha )& ${0,1,2}$ & \texttt{day\_type} \\
-$r$ & WACC määr & \% & \texttt{wacc} \\
+$r(\mathcal{A})$ & WACC määr & \% & \texttt{wacc} \\
 % Parameter slot_hour_dist(time_hour, weekday);   
-
 
 %%%%%%%%%%%%%%%%%%% PRIMAARENERGIA PARAMEETRID
 \\ \multicolumn{4}{c}{Primaarenergia parameetrid} \\
@@ -64,6 +63,10 @@ $\mathit{S}_{max}(\mathcal{T}_s, \mathcal{A},\mathcal{K})$ & Tootmisüksuse maks
 $\mathit{O}_{max}(\mathcal{T}_s)$ & Tootmisüksuse maksimaalne õlitoodang ajaühikus & t & \texttt{max\_load\_ol} \\
 $\mathit{Q}_{min}(\mathcal{T}_e)$ & Tootmisüksuse minimaalne elektrikoormus & MW & \texttt{min\_load\_el}\\
 $\mathit{S}_{min}(\mathcal{T}_e)$ & Tootmisüksuse minimaalne soojuskoormus & MW & \texttt{min\_load\_ht}\\
+$\mathit{G}_{max}(\mathcal{T}, \mathcal{A}, \mathcal{M})$&Uttegaasi maksimaalne kasutusvõimekus tootmisüksuses& $m^3$/h&\texttt{t\_rg}\\
+$\mathit{E}_{min}^{peak}(\mathcal{A}, \mathcal{M})$& Minimaalne /emph{peak} perioodi lubatud koormus & MW & \texttt{t\_el\_min\_sum\_peak} \\
+$\mathit{E}_{min}^{offpeak}(\mathcal{A}, \mathcal{M})$&Minimaalne /emph{off-peak} perioodi lubatud koormus & MW & \texttt{t\_el\_min\_sum\_peak} \\
+
 
 $\mathit{\Delta^{\uparrow}}(\mathcal{T}_e)$ & Tootmisüksuse üles koormamise kiirus & MW/h & \texttt{delta\_up} \\
 $\mathit{\Delta^{\downarrow}}(\mathcal{T}_e)$ & Tootmisüksuse alla koormamise kiirus & MW/h & \texttt{delta\_down} \\
@@ -89,56 +92,59 @@ $\mathit{MX}^o_r(\mathcal{T}_o, \mathcal{A}, \mathcal{K})$ & Õlitehase remondip
 $\lambda^f(\mathcal{T}, \mathcal{A})$& Tootmisüksuse aastane prognoositav avariilisus &\%&\texttt{failure\_rate}\\
 
 %% Muud parameetrid
-%  efficiency(t_el, para_lk, para_kt)  "Efficiencies for production units. Piecewise linear. (prim/sec)"
-%  eff_lookup(t_el, para_lk, para_kt)  "Efficiency lookup table (prim/sec)"
-%  ht_efficiency(t_el)                 "Heat production efficiency (MWh(ht)/MWh(fuel))"
-%  misc_lost_pwr(t_el, year ,month)    "Miscellaneous lost production capacities (MW)"
-%  lime_consumption(t_lime)            "Lime consumption rate (kg/MWh)"
-$\mathit{G}_{max}(\mathcal{T}, \mathcal{A}, \mathcal{M})$&Uttegaasi maksimaalne kasutusvõimekus tootmisüksuses& $m^3$/h&\texttt{t\_rg}\\
-%  t_el_min_sum_peak(year, month)      "Minimaalne summaarne kuine elektrikoormus (MWh)"
-%  t_el_min_sum_offpeak(year, month)   "Minimaalne summaarne kuine elektrikoormus (MWh)"
+$eta_e(\mathcal{T}_e,\Pi,\xi)$& Tootmisüksuste kasutegurite tabel tükati lineariseeritud lõikude kaupa & \% & \texttt{efficiency} \\
+$eta^q_e(\mathcal{T}_e,\Pi,\xi)$& Tootmisüksuste kasutegurite tabel tükati lineariseeritud lõikude kaupa primaarenergias & \% & \texttt{eff\_lookup} \\
+$\eta_s(\mathcal{T}_e)$& Tootmisüksuse kasutegur sooja tootmisel & MWh sj / MWh küt & \texttt{ht\_efficiency}\\
+$\mathit{E}_{loss}(\mathcal{T}_e, \mathcal{A}, \mathcal{K})$& Ajutine prognoositud võimsuskadu tootmisüksuses & MW & \texttt{misc\_lost\_power} \\
 %  permitted_use(year, month, t, k, feedstock) "Permitted use of feedstock in production"
 $\mathit{V}_{min}(\mathcal{T}, \mathcal{A}, \mathcal{M})$& Tootmisüksusesse lubatava kütuse minimaalne alumine kütteväärtus& MJ/kg & \texttt{cv\_min} \\
 $\mathit{\rho}(\mathcal{M}, \mathcal{E}, \mathcal{T})$&Maksimaalne lubatav kütuse osakaal sisenevas primaarenergias& MWh/MWh&\texttt{max\_ratio} \\
-%  t_rg_total(year, month)             "Total retort gas usage capacity (m3)"
+$\mathit{V}^{rg}_{max}$&Maksimaalne uttegaasi põletusvõimekus tootmisüksuses & $m^3/h$& \texttt{t\_rg\_total} \\
 %  t_rg_s(sim, t_el, year, month)      "Utilisation capacity of retort gas (m3/h)"
 %  oil_prod_prop(t_ol, ol_product)      "Percentage of oil product from total produce (fuel oil / gasoline)"
 
 %%%%%%%%%%%%%%%%%%% HEITMETE PARAMEETRID
 \\ \multicolumn{4}{c}{Heitmete parameetrid} \\
-%   em_tariff(em, year)               "Emission tariffs from corp. accounting (EUR/t)"
-%   em_tariff_ol(t_ol, em_ol, year)   "Oil emission tariffs from corp. accounting (EUR/t)"
-%   em_quota(year, em)                "Emissions quota (t/year)"
-%   em_coefficients(em, t_el, k, feedstock, para_lk) "Specific emission regression coefs (t)"
-%   em_coefficients_ol(em_ol, t_ol)   "Oil specific emission coefs. Unit is t(emission)/t(feedstock)"
-%   hour_limit(t_stack)               "Limit of total number of operational hours (hours)"
-%   lime_price(year)                  "Lime price in year (EUR/t)"
-%   em_fa(k, feedstock, t_el)  "Specific emission of fly ash for power production units (kg/GWh el)"
-%   em_ba(k, feedstock, t_el)  "Specific emission of bottom ash for power production units  (kg/GWh el)"
-%   em_cw(k, feedstock, t_el)  "Specific emission of cooling water for power production units (m3/GWh el)"
-%   spent_sox(year)            "Already spent SOx quota (t) (needed mostly for the fist year)"
+$\mathit{VC}^{em}_e(\mathcal{W}_e,\mathcal{A})$&Heitmete tariifid JARist & EUR/t, EUR/$m^3$& \texttt{em\_tariff}\\
+$\mathit{VC}^{em}_o(\mathcal{T})o,\mathcal{W}_o,\mathcal{A})$&Heitmete tariifid JARist õlitehastele& EUR/t, EUR/$m^3$& \texttt{em\_tariff\_ol}\\
+$\mathit{W}_{max}(\mathcal{A},\mathcal{W}_e)$& Aastane emissioonikvoot& t/aastas& \texttt{em\_quota} \\
+$\mathit{T}_{max}(\mathcal{T}_w)$ & Tundide piirang korstnatele & h & \texttt{hour\_limit} \\
+$\mathit{W}^{SO_x}_0(\mathcal{A})$& Antud aastal juba kulutatud SOx kvoot& t & \texttt{spent\_sox}\\
+$\mathit{W}_{fa}(\mathcal{M},\mathcal{E},\mathcal{T}_e)$& Lendtuha eriheitmed tootmisüksusele& kg/GWh el& \texttt{em\_fa} \\
+$\mathit{W}_{ba}(\mathcal{M},\mathcal{E},\mathcal{T}_e)$& Ladestatud tuha eriheitmed tootmisüksusele& kg/GWh el& \texttt{em\_ba} \\
+$\mathit{W}_{cw}(\mathcal{M},\mathcal{E},\mathcal{T}_e)$& Jahutusvee eriheitmed tootmisüksusele& $m^3$/GWh el& \texttt{em\_cw} \\
 %  em_coef(em, t_el, k, feedstock, para_lk, k_level) "Recalculated emissions coefficients"
 %  retort_gas_coef(em)                               "Emissions coefficient for retort gas"
 %  cw_usage(t, month)                                "Cooling water usage requirement for production units"
-%  hh_so(k, feedstock, para_lk, t_el)         "Concentration levels of SOx (mg/m3)"
-%  hh_no(k, feedstock, para_lk, t_el)         "Concentration levels of SOx (mg/m3)"
-%  hh_coef(em, t_el, k, feedstock, para_lk)   "Aggregated and converted concentrations (t/m3)"
-%  hh_q(t_el, para_lk)                        "Concentrations per entering feedstock (t/m3/MWh)"
-%  hh_limit(em, year, t_el)                   "Concentration limits for each year"
+%  lime_consumption(t_lime)            "Lime consumption rate (kg/MWh)"
+
+$\mathit{\omega_e}(\mathcal{W}_e,\mathcal{T}_e, \mathcal{M}, \mathcal{E}, \Pi)$& Eriheitmete koefitsendid kütustele tootmisüksustes (elekter)& t/MWh küt&\texttt{em\_coefficients}\\
+$\mathit{\omega_o}(\mathcal{W}_o\mathcal{T}_o)$& Eriheitmete koefitsendid õlitehastes, kütusest praegu ei sõltu & t/t küt &\texttt{em\_coefficients\_ol} \\
+$\mathit{\phi}_{SOx}(\mathcal{M}, \mathcal{E},\Pi, \mathcal{T}_e)$&Tükati lineariseeritud $SO_x$ kontsentratsiooni tasemed tootmisüksustele koormuste kaupa& mg/$nm^3$ & \texttt{hh\_so} \\
+$\mathit{\phi}_{NOx}(\mathcal{M}, \mathcal{E},\Pi, \mathcal{T}_e)$&Tükati lineariseeritud $NO_x$ kontsentratsiooni tasemed tootmisüksustele koormuste kaupa& mg/$nm^3$ & \texttt{hh\_no} \\
+$\mathit{\phi}(\mathcal{W}_e, \mathcal{T}_e, \mathcal{M}, \mathcal{E}, \Pi)$&Primaarenergiale vastavaks konverteeritud kontsentratsioonid&mg/$nm^3$ & \texttt{hh\_coef} \\ 
+$\mathit{\phi_q}(\Pi, \mathcal{T}_e)$& Tükati lineariseeritud lõikudele vastavad katlasse sisenevad primaarenergia kogused & MWh/h & \texttt{hh\_q}\\
+$\mathit{\phi}_{max}(\mathcal{W}_e,\mathcal{A},\mathcal{T}_e )$& Aastate ja heitmete kaupa kontsentratsioonide ülemised piirid& mg/$nm^3$ & \texttt{hh\_limit} \\
+
 
 %%%%%%%%%%%%%%%%%%% TURUINFO PARAMEETRID
-\\ \multicolumn{4}{c}{Turuinfo parameetrid} \\
-$\mathit{P_E}(\mathcal{S})$ & Elektri referentshind slotis & EUR/MWh & \texttt{el\_price\_slot}\\
+\\ \multicolumn{4}{c}{Turuinfo ja hindade parameetrid} \\
+$\mathit{P_E}(\mathcal{T}, \mathcal{S})$ & Elektri referentshind slotis & EUR/MWh & \texttt{el\_price\_slot}\\
+$\mathit{P_E}^{fw}(\mathcal{C}, mathcal{FW}, \mathcal{A} , \mathcal{K})$ & Elektri \emph{forwardite} hinnad (aeg, hinnatase) & EUR/MWh & \texttt{el\_fwd\_price} \\
 $\mathit{P_{CO_2}}(\mathcal{A})$ & $CO_2$ referentshind & EUR/t & \texttt{co2\_price}\\
 $\mathit{P_O}(\mathcal{A},\mathcal{K})$ & Õli referentshind & EUR/t & \texttt{oil\_price}\\
 $\mathit{P_S}(\mathcal{A},\mathcal{K})$ & Soojuse referentshind & EUR/MWh & \texttt{heat\_price}\\
+$\mathit{P_l}(\mathcal{A})$ & Lubja hind aastate kaupa & EUR/t & \texttt{lime\_price} \\
 %soojatarne($A$,$\kappa$,t_sj)\\
 
 %%%%%%%%%%%%%%%%%%% HEDGE PARAMEETRID
 \\ \multicolumn{4}{c}{Hedge parameetrid} \\
-%   co2_certs(serial, year, contract_para)      "CO2 allowance amounts and prices for each year"
-%   el_fwd_price(serial, fwd_type, year, month) "Electricity forward delivery period, delivery date and price"
-   
+$\mathit{FW}^{CO2}(\mathcal{C}, \mathcal{A}, \mathcal{C}^{para})$ & $CO_2$ suletud positsioon (kogused, hinnad ja \emph{delivery} aastad)& t, EUR/t & \texttt{co2\_certs} \\
+
+%%%%%%%%%%%%%%%%%%% MUUD PARAMEETRID
+\\ \multicolumn{4}{c}{Muud parameetrid} \\
+$\mathit{B}$ & Benderi tükelduse piirangute sisse- ja väljalülitamise parameeter & \{0,1\} & \texttt{benders} \\
+  
 \caption{Optimeerimismudelit kirjeldavad parameetrid \label{tab:para}} 
 \end{longtable}
 \end{landscape}

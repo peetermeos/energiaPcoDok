@@ -1,6 +1,5 @@
 \begin{landscape}
-\begin{table}
-\begin{tabular}{l l c l}
+\begin{longtable}{l l c l}
 Muutuja & Kirjeldus & Ühik & Vaste koodis\\
 \hline
 %%%%%%%%%%%%%%%%%%%%%% KAEVANDUSE MUUTUJAD
@@ -26,26 +25,25 @@ $F^{laost}_{e,i,l_k}$& Laost $l_k$ logistikaliinile $\rho$ läinud primaarenergi
 $F^{lattu}_{e,i,l_t}$& Logistikaliinilt lattu $l_t$ läinud primaarenergia $e$ kogus ajaühikus $i$ &t & \texttt{logs\_to\_storage} \\
 $F^{tootmisse}_{e,t,i,\rho}$& Logistikaliinilt $\rho$ tootmisüksusesse $t$ läinud primaarenergia kogus $e$ ajaühikus $i$ &t & \texttt{logs\_to\_production}\\
 $F^{laost}_{e,i,l_t}$& Laost $l_t$ tootmisüksusesse $t$ läinud primaarenergia kogus $e$ ajaühikus $i$ &t & \texttt{storage\_to\_production}\\
-$R_{e,i,\rho, l_t}$ & Liinilt $\rho$ lattu $l_t$ ajaühikus $i$ tarnitud ja mudeliväliseks kasutuseks reserveeritud primaarenergia $e$ & t & \texttt{daily\_res\_f}
-\end{tabular}
+$R_{e,i,\rho, l_t}$ & Liinilt $\rho$ lattu $l_t$ ajaühikus $i$ tarnitud ja mudeliväliseks kasutuseks reserveeritud primaarenergia $e$ & t & \texttt{daily\_res\_f}\\
 \caption{Optimeerimismudeli kaevandamise ja logistika muutujad\label{tab:k_muutujad}}
-\end{table}
+\end{longtable}
 
 %%%%%%%%%%%%%%%%%%%%%% TOOTMISE MUUTUJAD
-\begin{table}
-\begin{tabular}{l l c l}
+\begin{longtable}{l l c l}
 Muutuja & Kirjeldus & Ühik & Vaste koodis\\
 \hline
-$\Pi_{tot}$ & Kogu optimeerimisperioodi muutuvkasum, see mida maksimeerime & EUR & \texttt{total\_profit}\\
+$\Xi_{tot}$ & Kogu optimeerimisperioodi muutuvkasum, see mida maksimeerime & EUR & \texttt{total\_profit}\\
+$\Xi_{i}$ & Perioodi $i$ muutuvkasum, mida maksimeerime & EUR & \\
 $Q^{k,l}_{t,i,e}$&Tootmisüksusesse $t$ primaarenergiast $e$ ajaühikus $i$ lisanditega $k,l$ läinud energia &MWh &\texttt{q}\\
 
 $E_{t,i}$ & Tootmisüksuse $t$ elektritoodang ajaühikus $i$ & MWh & \texttt{load\_el}\\
-$E^{op}_{t,i}$ & Tootmisüksuse $t$ elektritoodang ajaühikus $i$ operatiivmudelis & MWh & \texttt{load\_el}\\
+$E^{op}_{t,i}$ & Tootmisüksuse $t$ elektritoodang ajaühikus $i$ operatiivmudelis & MWh & \texttt{load\_el\_op}\\
 $S_{t,i}$ & Tootmisüksuse $t$ soojuse toodang ajaühikus $i$ & MWh & \texttt{load\_ht}\\
 $O_{t,i}$ & Tootmisüksuse $t$ õlitoodang ajaühikus $i$ & t & \texttt{oil}\\
 $L^{killustik}_{t,i,k}$ & Killustiku lisamise taseme $k$ binaarmuutuja tootmisüksusesse $t$ ajaühikus $i$ & \{0,1\} & \texttt{add\_k}\\
-$L^{lubi}_{t,i,l}$ & Lubja lisamise taseme $l$ binaarmuutuja tootmisüksusesse $t$ ajaühikus $i$ & \{0,1\} & \texttt{add\l}\\
-$\lambda_{t,i,p}$ & Tootmisüksuse $t$ kasuteguri tükati linaarse lähendamise muutuja ajaühikus $i$ lõigule $p$ & \% & \texttt{lambda\_p}\\
+$L^{lubi}_{t,i,l}$ & Lubja lisamise taseme $l$ binaarmuutuja tootmisüksusesse $t$ ajaühikus $i$ & \{0,1\} & \texttt{add\_l}\\
+$\lambda_{t,i,p}$ & Tootmisüksuse $t$ kasuteguri tükati linaarse lähendamise muutuja ajaühikus $i$ lõigule $p\in \Pi$ & \% & \texttt{lambda\_p}\\
 $\lambda^e_{t,i,j,h}$ & Tootmisüksuse $t$ heitme $h$ kontsentratsiooni tükati linaarse lähendamise muutuja ajaühikus $i$ & \% & \texttt{lambda\_e}\\
 $z_{t,i,j,h}$ & Tootmisüksuse $t$ heitme $h$ kontsentratsiooni ja p.e. korrutise asendusmuutuja ajaühikus $i$ & \% & \texttt{z\_emission}\\
 
@@ -68,9 +66,8 @@ $a^{s}_{i, s}$ & Korstna $s$ ajaühikus $i$ kasutamist tähistav otsustusmuutuja
 $H^{CO_2}_{c,i}$& Ostetud CO$_2$ kvoodi $c$ kasutus ajaühikus $i$ & t & \texttt{co2\_cert\_usage}\\
 $h^{CO_2}_{i}$& CO$_2$ kvoodi ost spot turult ajaühikus $i$ & t & \texttt{co2\_spot\_market}\\
 $H^{el}_{c,A,\kappa}$ &Elektri forwardlepingu $c$ kasutus aastas ja kuus $A,\kappa$ & MWh & \texttt{el\_fwd\_position}\\
-$h^{el}_{i}$ &Elektri positsioon spot turul ajaühikus $i$ & MWh & \texttt{el\_spot\_position}
+$h^{el}_{i}$ &Elektri positsioon spot turul ajaühikus $i$ & MWh & \texttt{el\_spot\_position}\\
 
-\end{tabular}
 \caption{Optimeerimismudeli sekundaarenergia tootmise muutujad\label{tab:t_muutujad}}
-\end{table}
+\end{longtable}
 \end{landscape}

@@ -1,0 +1,67 @@
+\begin{landscape}
+\section{Mudeli seadistuse parameetrid}
+\label{app:seadistus}
+\small
+\begin{longtable}{l c l}
+Parameeter & Formaat & Kirjeldus \\
+\hline
+\texttt{beg\_date} &  PPKKAAA       & Mudeli alguskuupäev \\
+\texttt{end\_date} &  PPKKAAA       & Mudeli lõpukuupäev  \\
+\texttt{slot}      &  \{T,PK,PV,K\} & Mudeli resolutsioon \\
+\texttt{fc}        &  \{true,false\}& Püsikulude modelleerimise sisselülitamine \\
+\texttt{fix\_st}   &  PPKKAAA       & Laoseisu fikseerimine etteantud kuupäevaks ja esimese perioodi opt.\\
+\texttt{hr}        &  \{true,false\}& Korstnate töötundide piirangu sisselülitamine \\
+\texttt{cw}        &  \{true,false\}& Jahutusvee piirangu sisselülitamine \\
+\texttt{mkul}      &  \{true,false\}& Suure muutuvkulude vaate arvutamine järeltöötluses \\
+\texttt{prc}       &  \{true,false\}& GV primaarenergia ostulepingute arvestamine \\
+\texttt{numsim}    &  $\mathbb{Z}^+$& Stohhastiliste simulatsioonide arv (1=deterministlik)\\
+\texttt{two\_stage}&  \{true,false\}& Kaheastmelise stohhastika sisselülitamine (Benders') \\
+\texttt{ys}        &  \{true,false\}& JARi ühtsete stsenaariumite hindade kasutamine\\
+\texttt{hedge}     &  \{true,false\}& Hedge funktsionaalsuse sisselülitamine \\
+\texttt{MT}        &  \{ST,OP\}     & Mudeli tüüp, kas standardmudel või operatiivmudel  \\ 
+\texttt{max\_marg} &  $\mathbb{Z}^+$  & Müügimarginaalide arvutamise päevade arv \\
+\texttt{m\_marg}   &  \{true,false\}  & Minimaalsete müügimarginaalide rakendamine \\
+\texttt{n\_price\_1}&  $\mathbb{R}^+$  & Nõudluskõvera alguspunkti hinnatase [EUR/MWh kütust]\\
+\texttt{n\_price\_2}&  $\mathbb{R}^+$  & Nõudluskõvera alguspunkti hinnatase [EUR/MWh kütust]\\
+\texttt{n\_price\_step}&$\mathbb{R}^+$  & Nõudluskõvera arvutamise sammu pikkus \\
+\texttt{n\_source} &  $m \in \mathcal{M}$  & Nõudluskõverale joonistatava kütuse allikas (kaevandus)\\
+\texttt{nk}        &  $e \in \mathcal{E}$  & Nõudluskõverale joonistatav kütus \\
+\texttt{nkl}       &  $e \in \mathcal{E}$  & Suurele nõudluskõverale joonistatav kütus \\
+\texttt{pk}        &  $e \in \mathcal{E}$  & Pakkumiskõverale joonistatav kütus \\
+\texttt{hm}        &  \{true,false\}& Kütuse heatmapi joonistamise kood \\
+\texttt{hm\_vkg}   &  \{true,false\}& Kontsentraadi hinnastamise heatmapi joonistamise kood \\   
+\\  
+\caption{PCO mudeli üleüldise seadistuse parameetrid}
+\label{tab:conf_gen}
+\end{longtable}
+
+
+\begin{longtable}{l c l}
+Parameeter & Formaat & Kirjeldus \\
+\hline
+\texttt{sc}              &  \{true,false\}&  Käivituskuludega arvestamine \\
+\texttt{inventory}       &  \{true,false\}&  Perioodi lõpu laojäägi väärtustamise sisselülitamine\\
+\texttt{cleanings}       &  \{true,false\}&  Katelde puhastuste optimeerimine \\
+\texttt{oil}             &  \{true,false\}&  Õli tootmine ja müük\\
+\texttt{ht}              &  \{true,false\}&  Soojuse tootmine ja müük\\
+\texttt{sales}           &  \{true,false\}&  Tükikivi müük \\
+\texttt{logistics}       &  \{true,false\}&  Logistikaliinide sisselülitamine \\
+\texttt{storage}         &  \{true,false\}&  Ladustamise sisselülitamine \\
+\texttt{mine\_storage}   &  \{true,false\}&  Kaevanduste ladude sisselülitamine \\
+\texttt{prod\_storage}   &  \{true,false\}&  Tootmisüksuste ladude sisselülitamine \\
+\texttt{mines}           &  \{true,false\}&  Kaevanduste ja GV hanke sisselülitamine \\
+\texttt{rg\_balance}     &  \{true,false\}&  Uttegaasi bilansi sisselülitamine \\
+\texttt{rg\_division}    &  \{true,false\}&  Uttegaasi proportsionaalse kasutuse sisselülitamine\\
+\texttt{mx\_schedule}    &  \{true,false\}&  Remondigraafiku optimeerimine \\
+\texttt{discounting}     &  \{true,false\}&  Rahavoogude diskonteerimine nüüdisväärtusse\\
+\texttt{l\_k\_invoked}   &  \{true,false\}&  Killustiku ja lubja kasutuse sisselülitamine \\
+\texttt{heat\_free}      &  \{true,false\}&  Soojuse miinimumtarne kohustuse väljalülitamine \\
+\texttt{kkt\_free}       &  \{true,false\}&  KKT miinimumostu kohustuse väljalülitamine \\
+\texttt{el\_free}        &  \{true,false\}&  Minimaalse elektritootmiskoguse väljalülitamine \\
+\texttt{scen}            &  \{true,false\}&  Stohhastika riskistsenaariumite kasutamine \\
+\texttt{max\_cpu}        &  $\mathbb{Z}^+$&  Tuumade arv paralleelse optimeerimise jaoks \\
+\caption{PCO mudeli seadistuse parameetrid, mis üldiselt muutmist ei vaja} \\
+\label{tab:conf_spec}
+\end{longtable}
+\normalsize
+\end{landscape}

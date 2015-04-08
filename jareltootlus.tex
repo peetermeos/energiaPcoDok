@@ -1,3 +1,13 @@
-\begin{verbatim}
-sdjhfskdjhfkasdh
-\end{verbatim}
+% Siia tuleb järeltöötluse tekst
+Optimeerimismudeli järeltöötluse mõte on arvutada mudeli väljund ümber lõppkasutajale vajalikeks agregeeritud ja mugavamateks vaadeteks. Näiteks selle asemel, et ise mitut suhteliselt suurt pivot  tabelit kokku liites leida vajalik tulemus (nt. slotikoormuste asemel on vaja kuiseid toodangunumbreid), saab need arvutused juba GAMSis suhteliselt lihtsa vaevaga ette ära teha. Lisaks sellele vähendab see andmete laadimise vajadust Excelisse, mis drastiliselt vähendab meie Exceli failide suurust.   Kui optimeerimismudeli väljundi GDX fail on harilikult üle 1 GB suur, siis agregeeritud Exceli väljund on harilikult ca 20 MB. Järgnev on üldine jaotus järeltöötluses kokku pandud vaadetest:
+\begin{itemize}
+\item Keskmised kasutegurid
+\item Keskmised eriheitmed
+\item Heitmed
+\item Primaarenergia kaeveplaan ja hankeplaan
+\item Kütuste kasutus (slott, päev, kuu, aasta)
+\item Toodang (slott, päev, kuu, aasta)
+\item Müügitulud
+\item Muutuvkasum (slott, päev, kuu, aasta)
+\item Muutuvkulud (slott, päev, kuu, aasta)
+\end{itemize}

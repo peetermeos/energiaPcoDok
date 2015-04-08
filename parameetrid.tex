@@ -1,0 +1,144 @@
+\begin{landscape}
+\section{Parameeterid}
+\label{app:parameetrid}
+
+\begin{longtable}{l l l l}
+Sümbol & Kirjeldus & Ühik & Vaste koodis\\
+\hline
+\endfirsthead
+
+Sümbol & Kirjeldus & Ühik & Vaste koodis\\
+\hline
+\endhead
+
+\multicolumn{4}{c}{Kalendri ja ajaga seotud parameetrid} \\
+% Kalendri parameetrid (päevad, kuud, slotid jne)
+$S_l(\mathcal{P}, \mathcal{S},\mathcal{T})$     & Algne sloti pikkus tundides per tootmisüksus & h & \texttt{slot\_length\_s} \\
+$S^s_l(\mathcal{P}, \mathcal{S}, \mathcal{T})$  & Sloti pikkus tundides, korrigeeritud avariilisusega vastavalt stsenaariumile & h & \texttt{slot\_length} \\
+$D_m(\mathcal{K})$ & Päevade arv kalendrikuus   & pv & \texttt{days\_in\_month} \\
+$D_y(\mathcal{A})$ & Päevade arv kalendriaastas & pv & \texttt{days\_in\_year} \\
+$D_t(\mathcal{P})$ & Päeva tüüp (0-tööpäev, 1-laupäev, 2-püha )& ${0,1,2}$ & \texttt{day\_type} \\
+$r$ & WACC määr & \% & \texttt{wacc} \\
+% Parameter slot_hour_dist(time_hour, weekday);   
+
+
+%%%%%%%%%%%%%%%%%%% PRIMAARENERGIA PARAMEETRID
+\\ \multicolumn{4}{c}{Primaarenergia parameetrid} \\
+$\mathit{V}_{unit}(\mathcal{M}, \mathcal{E})$ & Kaevandusest $\mathcal{M}$ hangitud kütuse $\mathcal{E}$ kütteväärtus  & MWh/t MJ/kg& \texttt{cv}\\
+$\mathit{V}_{MWh}(\mathcal{M}, \mathcal{E}) $ & Kaevandusest $\mathcal{M}$ hangitud kütuse $\mathcal{E}$ kütteväärtus  & MWh/t      & \texttt{cv\_mwh}\\
+$\mathit{V}_s(\mathcal{M})$                   & Rikastamisel tekkiva sõelise kütteväärtus                              & MWh/t      & \texttt{sieve\_cv} \\ 
+
+$\mathit{M}_{max}(\mathcal{M}, \mathcal{E},\mathcal{A}, \mathcal{K})$ & Maksimaalne kuine kaevevõimekus kaevandusele & t & \texttt{max\_mining\_cap} \\
+$\mathit{M}_{perm}(\mathcal{M}, \mathcal{E},\mathcal{A}, \mathcal{K})$& Kaevanduse antud toote tootmise lubamise indikaator &(0,1)& \texttt{perm\_mining} \\
+$\mathit{D}_w(\mathcal{M}, \mathcal{W})$ & Kaevanduse antud nädalapäeval töötamise indikaator &(0,1)& \texttt{k\_workday} \\
+$\mathit{VC}^{fs}_(\mathcal{M}, \mathcal{E}, \mathcal{A})$ & Kaeve muutuvkulud kaevanduses. & EUR/t & \texttt{fs\_vc} \\
+
+%% GV hinnad ja kogused
+$\mathit{VC}^{contr}(\mathcal{C}, \mathcal{A}, \mathcal{K}, \mathcal{M}, \mathcal{E})$ & Hankelepinguga ostetava kütuse hind & EUR/MWh &\texttt{contract} \\
+$\mathit{P}_c(\mathcal{A})$ & Tükikivi müügihind antud aastal & EUR/t & \texttt{concentrate\_price} \\
+$\mathit{M}^a_{min}(\mathcal{M}, \mathcal{E}, \mathcal{A}, \mathcal{K})$ & Minimaalne kohustuslik hankekogus GV allikast & t/kuus & \texttt{fs\_min\_acq} \\ 
+
+%% Rikastus
+$\mathit{\alpha}_e(\mathcal{E}, \mathcal{M}, \mathcal{E})$ & Karjääride rikastuskoefitsendid kaevisest toote saamiseks & \% & \texttt{enrichment\_coef} \\
+$\mathit{\alpha}_a(\mathcal{M})$ & Aheraine osakaal mäemassis & \% & \texttt{tailings\_pct} \\
+$\mathit{\alpha}_s(\mathcal{M})$ & Sõelise osakaal mäemassis & \% & \texttt{sieve\_pct} \\
+$\mathit{\alpha}_k(\mathcal{M})$ & Kontsentraadi osakaal mäemassis & \% & \texttt{cont\_pct} \\
+
+%%%%%%%%%%%%%%%%%%% LOGISTIKA PARAMEETRID
+\\ \multicolumn{4}{c}{Logistika parameetrid} \\
+$\mathit{L}_{max}(\mathcal{L})$ & Ladude maksimaalne maht & t & \texttt{max\_storage} \\
+$\mathit{L}_{min}(\mathcal{L})$ & Minimaalne lubatud laomaht & t & \texttt{min\_storage} \\
+$\mathit{L}_{start}(\mathcal{L}, \mathcal{M}, \mathcal{E})$ & Mudeli algusperioodi laoseisud kütuste kaupa& t & \texttt{initial\_storage} \\
+$\mathit{F}^{log}_{max}(\mathcal{R})$ & Logistikaliini läbilaskevõimekus & t/päev & \texttt{max\_throughput} \\
+$\mathit{F}^k_{max}(\mathcal{M}, \mathcal{A})$ & Kaevanduste laadimispunktide pealelaadimisvõimekus & t/päev & \texttt{max\_loading\_k} \\
+$\mathit{F}^t_{max}(\mathcal{R}, \mathcal{A})$ & Liini lõppunktides mahalaadimisvõimekus & t/päev & \texttt{max\_loading\_t} \\
+$\mathit{VC}^{st}(\mathcal{L})$ & Ladudesse laadimise ja võtmise muutuvkulud & EUR/t & \texttt{storage\_vc} \\
+$\mathit{VC}^{log}(\mathcal{R}, \mathcal{A})$ & Logistikaliinide muutuvkulud aastate kaupa & EUR/t & \texttt{log\_vc} \\
+
+%%%%%%%%%%%%%%%%%%% TOOTMISE PARAMEETRID
+\\ \multicolumn{4}{c}{Tootmise parameetrid} \\
+%katelt_plokis(t_el)\\
+$\mathit{E}_{max}(\mathcal{T}_e, \mathcal{A},\mathcal{K})$ & Tootmisüksuse maksimaalne elektrikoormus & MW & \texttt{max\_load\_el} \\
+$\mathit{Q}_{max}(\mathcal{T}_e, \mathcal{A},\mathcal{K})$ & Tootmisüksuse maksimaalne kogukoormus & MW  & \texttt{max\_load\_pu} \\
+$\mathit{S}_{max}(\mathcal{T}_s, \mathcal{A},\mathcal{K})$ & Tootmisüksuse maksimaalne soojuskoormus & MW & \texttt{max\_load\_ht}\\
+$\mathit{O}_{max}(\mathcal{T}_s)$ & Tootmisüksuse maksimaalne õlitoodang ajaühikus & t & \texttt{max\_load\_ol} \\
+$\mathit{Q}_{min}(\mathcal{T}_e)$ & Tootmisüksuse minimaalne elektrikoormus & MW & \texttt{min\_load\_el}\\
+$\mathit{S}_{min}(\mathcal{T}_e)$ & Tootmisüksuse minimaalne soojuskoormus & MW & \texttt{min\_load\_ht}\\
+
+$\mathit{\Delta^{\uparrow}}(\mathcal{T}_e)$ & Tootmisüksuse üles koormamise kiirus & MW/h & \texttt{delta\_up} \\
+$\mathit{\Delta^{\downarrow}}(\mathcal{T}_e)$ & Tootmisüksuse alla koormamise kiirus & MW/h & \texttt{delta\_down} \\
+
+$\mathit{\gamma}_{oil}(\mathcal{T}_o, \mathcal{A})$ & Õlitehase õli tootlikkus & t/t & \texttt{yield\_oil} \\
+$\mathit{\gamma}_{rg}(\mathcal{T}_o)$ & Õlitehase uttegaasi tootlikkus & $m^3$/t & \texttt{rg\_yield} \\
+
+%% Muutuvkulud
+$\mathit{VC}^{supp}(\mathcal{T}, \mathcal{A})$ & Kütuse etteande muutuvkulud & EUR/t & \texttt{t\_supply\_vc} \\
+$\mathit{VC}^{gr}(\mathcal{M}, \mathcal{E}, \mathcal{T}, \mathcal{A})$ & Kütuse purustamise muutuvkulud & EUR/t & \texttt{t\_supply\_gr\_vc} \\
+$\mathit{VC}^{el}(\mathcal{T}_e, \mathcal{A})$ & Muud elektri tootmise muutuvkulud & EUR/MWh(el) & \texttt{el\_other\_vc} \\
+$\mathit{VC}^{ht}(\mathcal{T}_e, \mathcal{A})$ & Muud soojuse tootmise muutuvkulud & EUR/MWh(heat) & \texttt{ht\_other\_vc} \\
+$\mathit{VC}^{oil}(\mathcal{T}_o, \mathcal{A})$ & Muud õli tootmise muutuvkulud & EUR/t(oil) & \texttt{oil\_other\_vc} \\
+$\mathit{VC}^{start}(\mathcal{T}_e)$ & Käivituskulud & EUR & \texttt{startup\_vc} \\
+
+%% Avariilisused ja remondid
+
+%  t_mx(t_el, year)                    "Maintenance period length (days)"
+$\mathit{MX}^e(\mathcal{T}, \mathcal{Z}^{num}, \mathcal{Z}^{kp})$& Tootmisüksuste remondigraafiku hoolduse algus- ja lõpukuupäevad& PPKKAA& \texttt{t\_maintenance}\\
+$\mathit{MX}^e_s(\mathcal{P}, \mathcal{S}, \mathcal{T})$ & Tootmisüksuse remondi- ja hooldustundide arv slotis & h & \texttt{t\_mx\_schedule}\\
+$\mathit{MX}^o_p(\mathcal{T}_o, \mathcal{A}, \mathcal{K})$ & Õlitehase puhastuspäevade arv kuus & päeva & \texttt{p\_days\_month\_oil} \\
+$\mathit{MX}^o_r(\mathcal{T}_o, \mathcal{A}, \mathcal{K})$ & Õlitehase remondipäevade arv kuus & päeva & \texttt{r\_days\_month\_oil} \\
+$\lambda^f(\mathcal{T}, \mathcal{A})$& Tootmisüksuse aastane prognoositav avariilisus &\%&\texttt{failure\_rate}\\
+
+%% Muud parameetrid
+%  efficiency(t_el, para_lk, para_kt)  "Efficiencies for production units. Piecewise linear. (prim/sec)"
+%  eff_lookup(t_el, para_lk, para_kt)  "Efficiency lookup table (prim/sec)"
+%  ht_efficiency(t_el)                 "Heat production efficiency (MWh(ht)/MWh(fuel))"
+%  misc_lost_pwr(t_el, year ,month)    "Miscellaneous lost production capacities (MW)"
+%  lime_consumption(t_lime)            "Lime consumption rate (kg/MWh)"
+$\mathit{G}_{max}(\mathcal{T}, \mathcal{A}, \mathcal{M})$&Uttegaasi maksimaalne kasutusvõimekus tootmisüksuses& $m^3$/h&\texttt{t\_rg}\\
+%  t_el_min_sum_peak(year, month)      "Minimaalne summaarne kuine elektrikoormus (MWh)"
+%  t_el_min_sum_offpeak(year, month)   "Minimaalne summaarne kuine elektrikoormus (MWh)"
+%  permitted_use(year, month, t, k, feedstock) "Permitted use of feedstock in production"
+$\mathit{V}_{min}(\mathcal{T}, \mathcal{A}, \mathcal{M})$& Tootmisüksusesse lubatava kütuse minimaalne alumine kütteväärtus& MJ/kg & \texttt{cv\_min} \\
+$\mathit{\rho}(\mathcal{M}, \mathcal{E}, \mathcal{T})$&Maksimaalne lubatav kütuse osakaal sisenevas primaarenergias& MWh/MWh&\texttt{max\_ratio} \\
+%  t_rg_total(year, month)             "Total retort gas usage capacity (m3)"
+%  t_rg_s(sim, t_el, year, month)      "Utilisation capacity of retort gas (m3/h)"
+%  oil_prod_prop(t_ol, ol_product)      "Percentage of oil product from total produce (fuel oil / gasoline)"
+
+%%%%%%%%%%%%%%%%%%% HEITMETE PARAMEETRID
+\\ \multicolumn{4}{c}{Heitmete parameetrid} \\
+%   em_tariff(em, year)               "Emission tariffs from corp. accounting (EUR/t)"
+%   em_tariff_ol(t_ol, em_ol, year)   "Oil emission tariffs from corp. accounting (EUR/t)"
+%   em_quota(year, em)                "Emissions quota (t/year)"
+%   em_coefficients(em, t_el, k, feedstock, para_lk) "Specific emission regression coefs (t)"
+%   em_coefficients_ol(em_ol, t_ol)   "Oil specific emission coefs. Unit is t(emission)/t(feedstock)"
+%   hour_limit(t_stack)               "Limit of total number of operational hours (hours)"
+%   lime_price(year)                  "Lime price in year (EUR/t)"
+%   em_fa(k, feedstock, t_el)  "Specific emission of fly ash for power production units (kg/GWh el)"
+%   em_ba(k, feedstock, t_el)  "Specific emission of bottom ash for power production units  (kg/GWh el)"
+%   em_cw(k, feedstock, t_el)  "Specific emission of cooling water for power production units (m3/GWh el)"
+%   spent_sox(year)            "Already spent SOx quota (t) (needed mostly for the fist year)"
+%  em_coef(em, t_el, k, feedstock, para_lk, k_level) "Recalculated emissions coefficients"
+%  retort_gas_coef(em)                               "Emissions coefficient for retort gas"
+%  cw_usage(t, month)                                "Cooling water usage requirement for production units"
+%  hh_so(k, feedstock, para_lk, t_el)         "Concentration levels of SOx (mg/m3)"
+%  hh_no(k, feedstock, para_lk, t_el)         "Concentration levels of SOx (mg/m3)"
+%  hh_coef(em, t_el, k, feedstock, para_lk)   "Aggregated and converted concentrations (t/m3)"
+%  hh_q(t_el, para_lk)                        "Concentrations per entering feedstock (t/m3/MWh)"
+%  hh_limit(em, year, t_el)                   "Concentration limits for each year"
+
+%%%%%%%%%%%%%%%%%%% TURUINFO PARAMEETRID
+\\ \multicolumn{4}{c}{Turuinfo parameetrid} \\
+$\mathit{P_E}(\mathcal{S})$ & Elektri referentshind slotis & EUR/MWh & \texttt{el\_price\_slot}\\
+$\mathit{P_{CO_2}}(\mathcal{A})$ & $CO_2$ referentshind & EUR/t & \texttt{co2\_price}\\
+$\mathit{P_O}(\mathcal{A},\mathcal{K})$ & Õli referentshind & EUR/t & \texttt{oil\_price}\\
+$\mathit{P_S}(\mathcal{A},\mathcal{K})$ & Soojuse referentshind & EUR/MWh & \texttt{heat\_price}\\
+%soojatarne($A$,$\kappa$,t_sj)\\
+
+%%%%%%%%%%%%%%%%%%% HEDGE PARAMEETRID
+\\ \multicolumn{4}{c}{Hedge parameetrid} \\
+%   co2_certs(serial, year, contract_para)      "CO2 allowance amounts and prices for each year"
+%   el_fwd_price(serial, fwd_type, year, month) "Electricity forward delivery period, delivery date and price"
+   
+\caption{Optimeerimismudelit kirjeldavad parameetrid \label{tab:para}} 
+\end{longtable}
+\end{landscape}

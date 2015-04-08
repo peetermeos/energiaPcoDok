@@ -1,0 +1,26 @@
+% See joonistab kaevanduse rikastamise pildi
+
+\tikzstyle{int}=[draw, minimum size=3em]
+\tikzstyle{init} = [pin edge={to-,thin,black}]
+
+\begin{tikzpicture}[node distance=2.5cm,auto,>=latex']
+    \node [int,text width=4cm,align=center] (a) {Kaevevõimekus};  
+    \node [int,text width=3cm,align=center] (b) [below left=2cm] {Aheraine\\ (42\%)};
+    \node [int,text width=3cm,align=center] (c) [below of=a] {Kontsentraat\\ (23\%)};
+    \node [int,text width=3cm,align=center] (d) [below right=2cm] {Sõelis\\ (35\%)}; 
+
+    \node [int,text width=2cm,align=center] (e1) [below right of=b] {Toode 1};
+    \node [int,text width=2cm,align=center] (e2) [below right of=c] {Toode 2};     
+    
+    \path[->] (a)   edge (b);
+    \path[->] (a)   edge (c);
+    \path[->] (a)   edge (d);
+    
+    \path[->] (b)   edge (e1);
+    \path[->] (c)   edge (e1);
+    \path[->] (d)   edge (e1);
+    
+    \path[->, dotted] (b)   edge (e2);
+    \path[->, dotted] (c)   edge (e2);
+    \path[->, dotted] (d)   edge (e2);
+\end{tikzpicture}

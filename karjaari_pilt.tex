@@ -1,0 +1,25 @@
+% See joonistab karjääri rikastamise pildi
+
+\tikzstyle{int}=[draw, minimum size=3em]
+\tikzstyle{init} = [pin edge={to-,thin,black}]
+
+\begin{tikzpicture}[node distance=2.5cm,auto,>=latex']
+    \node [int,text width=4cm,align=center] (a) {Kaevevõimekus};  
+    \node [int,text width=3cm,align=center] (b) [below left=3cm] {Tooteks minev\\mäemass};
+    \node [int,text width=3cm,align=center] (c) [below right of=a] {Tooteks minev\\mäemass}; 
+
+    \node [int,text width=2cm,align=center] (b1) [below left of=b] {Toode};
+    \node [int,text width=2cm,align=center] (b2) [below right of=b] {Aheraine};     
+    
+    \node [int,text width=2cm,align=center] (c1) [below left of=c] {Toode};
+    \node [int,text width=2cm,align=center] (c2) [below right of=c] {Aheraine}; 
+
+    \path[->] (a)   edge (b);
+    \path[->] (a)   edge (c);
+    
+    \path[->] (b)   edge (b1);
+    \path[->] (b)   edge (b2);
+
+    \path[->] (c)   edge (c1);
+    \path[->] (c)   edge (c2);
+\end{tikzpicture}

@@ -1,0 +1,78 @@
+\section{GAMS koodi failistruktuur}
+\label{app:failid}
+
+%\begin{table}
+\begin{longtable}{l l}
+Fail & Kirjeldus \\
+\hline
+\texttt{pco\_bender.gms} & Benderi tükelduse algoritm stohhastilisele mudelile \\
+\texttt{pco\_bender\_cutconst.gms} & Benderi algoritmi alamjaotus lõigete genereerimiseks\\
+\texttt{pco\_benders\_masterproblem.gms} & Benderi algoritmi esimese faasi sihifunktsioon\\
+\texttt{pco\_benders\_solver.gms} & Solveri seadistus Benderi algoritmi jaoks\\
+\texttt{pco\_benders\_subobjective.gms} & Benderi algoritmi teise faasi sihifunktsioon\\
+\texttt{pco\_benders\_subproblem.gms} & Benderi algoritmi teise faasi piirangute alamhulga def. \\
+\texttt{pco\_calendar.gms} & Mudeli kalendri üldised seaded ja struktuurid\\
+\texttt{pco\_calendar\_day.gms} & Päevapõhise mudeli kalendri struktuurid\\
+\texttt{pco\_calendar\_month.gms} & Kuupõhise mudeli kalendri struktuurid\\
+\texttt{pco\_calendar\_slots.gms} & Slottide seadistused nii päeva- kui ka kuupõhisele mudelile\\
+\texttt{pco\_constraints\_e.gms} & Heitmetega seotud piirangud (kvoodid, hetkeheitmed jne)\\
+\texttt{pco\_constraints\_f.gms} & Püsikuludega seotud piirangud\\
+\texttt{pco\_constraints\_h.gms} & Hedge'ga seotud piirangud\\
+\texttt{pco\_constraints\_l.gms} & Logistikapiirangud\\
+\texttt{pco\_constraints\_op.gms} & Operatiivmudeli piirangud\\
+\texttt{pco\_constraints\_p.gms} & Tootmispiirangud (elekter, soojus, õli, uttegaas)\\
+\texttt{pco\_constraints\_s.gms} & Primaarenergia kaevandamise ja hankimise piirangud\\
+\texttt{pco\_contracts.gms} & Primaarenergia ostulepingute struktuur ja definitsioonid\\
+\texttt{pco\_cplex\_parameters.gms} & CPLEX solveri seadistusparameetrid\\
+\texttt{pco\_demand\_curve.gms} & Põhiline nõudluskõvera arvutamise kood (p.e. puudujääk)\\
+\texttt{pco\_demand\_curve\_long.gms} & Suure nõudluskõvera arvutamise kood\\
+\texttt{pco\_demand\_curve\_pp.gms} & Järeltöötlus nõudluskõvera koodi jaoks\\
+\texttt{pco\_demand\_curve\_var\_reset.gms} & Suure nõudluskõvera muutujate lähtestamine\\
+\texttt{pco\_deterministic.gms} & PCO deterministliku mudeli run koos konfiguratsiooniga\\
+\texttt{pco\_deterministic\_fix.gms} & PCO deterministliku mudeli fikseeritud laoga variant\\
+\texttt{pco\_energy\_gen\_scenario.gms} & Ühtsete Stsenaariumite hinnad\\
+\texttt{pco\_energy\_primary.gms} & Primaarenergia struktuurid, laadimine ja eeltöötlus\\
+\texttt{pco\_energy\_secondary.gms} & Sekundarenergia struktuurid, laadimine ja eeltöötlus\\
+\texttt{pco\_fix\_storage\_run.gms} & PCO fikseeritud laoga runi kood\\
+\texttt{pco\_fixcosts.gms} & Püsikulude struktuur ja laadimine\\
+\texttt{pco\_guss.gms} & GAMS GUSS parameetris PCO kõverate ja stohhastika jaoks\\
+\texttt{pco\_guss\_grid.gms} & PCO paralleelne jooksutamine GAMS GUSSiga\\
+\texttt{pco\_guss\_solve.gms} & GAMS GUSS seadistus PCO kõverate ja stohhastika jaoks\\
+\texttt{pco\_header.gms} & PCO päis ja üldine seadistamine\\
+\texttt{pco\_heatmap.gms} & Tundlikkusanalüüsi töövahend\\
+\texttt{pco\_hedge.gms} & Hedge struktuurid, andmed ja laadimine\\
+\texttt{pco\_logistics.gms} & Logistika struktuurid ja laadimine\\
+\texttt{pco\_macros.gms} & Makrode definitsioonid koodi loetavamaks muutmiseks\\
+\texttt{pco\_marginals.gms} & PCO müügimarginaalide arvutamise kood\\
+\texttt{pco\_obj.gms} & Üldine sihifunktsiooni juurikas\\
+\texttt{pco\_obj\_acquisitions.gms} & Sihifunktsiooni hangete komponent\\
+\texttt{pco\_obj\_contracts.gms} & Sihifunktsiooni ostulepingute komponent\\
+\texttt{pco\_obj\_discounting.gms} & Diskonteerimine sihifunktsioonis \\
+\texttt{pco\_obj\_emissions.gms} & Sihifunktsiooni heitmete komponent\\
+\texttt{pco\_obj\_fixcosts.gms} & Sihifunktsiooni püsikulude komponent\\
+\texttt{pco\_obj\_heat.gms} & Sihifunktsiooni soojuse tootmise ja müügi komponent\\
+\texttt{pco\_obj\_hedge.gms} & Sihifunktsiooni hedge komponent\\
+\texttt{pco\_obj\_inventory.gms} & Sihifunktsiooni lõpu laojäägi komponent\\
+\texttt{pco\_obj\_logistics.gms} & Sihifunktsiooni logistikakomponent\\
+%\texttt{pco\_obj\_mining_nkl.gms} & \\
+\texttt{pco\_obj\_oil.gms} & Sihifunktsiooni õli tootmise ja müügi komponent\\
+\texttt{pco\_obj\_penalty.gms} & Sihifunktsiooni karistusmuutujate elemendid\\
+\texttt{pco\_obj\_power.gms} & Sihifunktsiooni elektri müügi komponent\\
+\texttt{pco\_obj\_sales.gms} & Sihifunktsiooni primaarenergia müük\\
+\texttt{pco\_obj\_startup.gms} & Sihifunktsiooni käivituskulud\\
+\texttt{pco\_obj\_storage.gms} & Sihifunktsiooni ladustamiskulud\\
+\texttt{pco\_obj\_supply.gms} & Sihifunktsiooni KET kulud\\
+\texttt{pco\_op\_planning.gms} & PCO operatiivmudeli struktuurid ja laadimine\\
+\texttt{pco\_postprocessing.gms} & PCO järeltöötluse kood\\
+\texttt{pco\_quality\_check.gms} & PCO kvaliteedikontrolli elemendid\\
+\texttt{pco\_stochastics.gms} & Stohhastika üldine seadistus (paralleelne PCO)\\
+\texttt{pco\_stochastics\_processes.gms} & Avariilisus ja elektri hinnaprotsess stohhastikale\\
+\texttt{pco\_stochastics\_scenaria.gms} & Stsenaariumite genereerimine stohhastikale\\
+\texttt{pco\_stohhastika\_hinnad.gms} & Juhuslikud hinnaprotsessid stohhastika jaoks\\
+\texttt{pco\_supply\_curve.gms} & Pakkumiskõvera joonistamise töövahend\\
+\texttt{pco\_supply\_heatmap.gms} & Tundlikkusanalüüsi töövahend\\
+\texttt{pco\_variables.gms} & Muutujate definitsioonid\\
+\texttt{pco\_version.gms} & PCO versiooni defineeriv ja säilitav koodijupp\\
+\caption{Optimeerimismudeli koodi ja failide struktuur\label{tab:struktuur}}
+\end{longtable}
+%\end{table}

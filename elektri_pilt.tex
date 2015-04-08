@@ -1,0 +1,21 @@
+% See tükk LaTeXi joonistab pildi katla energeetilisest tasakaalust
+
+\tikzstyle{int}=[draw, minimum size=3em]
+\tikzstyle{init} = [pin edge={to-,thin,black}]
+
+\begin{tikzpicture}[node distance=2.5cm,auto,>=latex']
+    \node [int,text width=2cm,align=center] (a) {Katel};
+    \node (b) [left of=a,node distance=2cm, coordinate] {a};
+    \node [coordinate] (mid)   [right of=a, node distance=3cm]{};      
+    \node [int,text width=2cm,align=center] (c) [above right of=mid] {Turbiin\\$\eta \approx 32\%$};
+    \node [int,text width=2cm,align=center] (d) [below right of=mid] {Soojus\\$\eta \approx 78\%$}; 
+    \node [coordinate] (end_c) [right of=c, node distance=3cm]{};
+    \node [coordinate] (end_d) [right of=d, node distance=3cm]{};
+        
+    \path[->] (b)   edge node[above] {$Q_{kytus}$} node[below] {[MWh]}(a);
+    \path[->] (a)   edge node[above] {$Q_k$} node[below] {[MWh]} (mid);
+    \path[->] (mid) edge node[above, sloped] {$Q_e$} node[below, sloped] {[MWh]}(c);
+    \path[->] (mid) edge node[above, sloped] {$Q_s$} node[below, sloped] {[MWh]}(d);
+    \draw[->] (c)   edge node[above] {$E$} node[below] {[MWh]}(end_c) ;
+    \draw[->] (d)   edge node[above] {$S$} node[below] {[MWh]}(end_d) ;
+\end{tikzpicture}

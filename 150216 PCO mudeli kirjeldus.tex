@@ -69,7 +69,7 @@ Kaevandamine, logistika, õli tootmine ja tükikivi müük on modelleeritud päe
 Ülalmainitud väite juures on üks erand - mudeli versioonid TFS Changeset 2009 alates võimaldavad kasutada väikseima ajaühikuna  ühte kuud, mis on jagatud kolmeks slotiks (\emph{peak}, \emph{off-peak} ja \emph{weekend}). Sellises mudeli seades on ka kaevandamine, logistika ja õli tootmine kuu resolutsiooniga ning elektri tootmine siis vastava sloti täpsusega. Kuna sellisel juhul ei ole slotid kuu sees alati ranges ajalises järjestuses, toob selline mudeli seadistus kaasa mõningaid iseärasusi, mis on kirjeldatud peatükus \ref{sec:lisad}. Kuna mudelis on vaja siduda mudeli ajaühik $\i \in \mathcal{P}_{max}$ kalendriajaga (aasta $\mathcal{A}$ ja kuu $\mathcal{K}$ muutuvkulude, tarnekoguste ja turuhindade jaoks), siis mudelis on selle seose jaoks tuple $\langle i, \mathcal{A}, \mathcal{K} \rangle$ koodis \texttt{date\_cal(time\_t, year, month)} või makro kaudu lühidalt \texttt{y\_m\_t}. Kõik tupled on kirjeldatud tabelis \ref{tab:tupled} ja makrod lisas \ref{app:makrod}.
 
 \subsection{Diskonteerimine}
-Selleks, et väärtustada lähituleviku muutuvkasumit enam kui tuleviku muutuvkasumit\footnote{Varblane käes ja tuvi katusel}, on mudelis võimalus vastavalt etteantud aastasele intressimäärale\footnote{ehk siis WACC, \emph{Weighted Average Cost of Capital}} $r$ tuua tulevikuperioodide muutuvkasumid $Xi_i$ tänasesse päeva vastavalt järgnevale valemile, millega me korrutame läbi sihifunktsiooni elemendid.
+Selleks, et väärtustada lähituleviku muutuvkasumit enam kui tuleviku muutuvkasumit\footnote{Varblane käes ja tuvi katusel}, on mudelis võimalus vastavalt etteantud aastasele intressimäärale\footnote{ehk siis WACC, \emph{Weighted Average Cost of Capital}} $r$ tuua tulevikuperioodide muutuvkasumid $\Xi_i$ tänasesse päeva vastavalt järgnevale valemile, millega me korrutame läbi sihifunktsiooni elemendid.
 \begin{equation}
 \Xi_{tot} = \sum_i \frac{\Xi_i}{\prod_{j=1}^i(1+r/365)}
 \end{equation}
@@ -107,7 +107,7 @@ Olles välja kaevandanud parima koguse mäemassi, läheb karjääride ja kaevand
 Kaevandamise sihifunktsioon koosneb sisuliselt vaid kaevandamise muutuvkulu komponendist, mis on läbi korrutatud kaevandatud kütuse hulgaga. Sellele lisandub GV kütuse komponent, mis on analoogselt kaevandatud kütuse komponendiga korrutis lepingulise hinna ja kasutatud lepingu mahu korrutisega. Nagu alljärgnevast võrratusest \ref{obj_k2} on näha, eristab mudel hankekütust harilikust kaevandusest ja karjäärist. Mudel on sellisena ehitatud kaheastmelise stohhastilise optimeerimise võimalust arvestades, kus esimeses faasis otsustatakse ära perioodi kaevemahud omaenda kaevandustes jättes GV kütuse hankemahud varieeruma. Lisaks sellele pane tähele, et kuna hankelepingute hind on antud ENKPRIM poolt MWh kütuse kohta ning muud muutuvkulud on ühikuga EUR/t, siis on vajalik hankelepingute hinda teisendada kütteväärtusega läbi korrutamise näol.
 
 \begin{align}
-&\sum_{A,k,e_1,e_2} VC^{fs}_{k, e, A} M^k_{k,i,e_1, e_2} \cdot c_e(e1, e2)  \forall i \in \mathcal{P}_{max} \land \forall e_1, e_2 : c_e(e_1, e_2)>0 \land k \neq \texttt{Hange} \label{obj_k1} \\
+&\sum_{A,k,e_1,e_2} VC^{fs}_{k, e, A} M^k_{k,i,e_1, e_2} \cdot \alpha_e(e1, k, e2)  \forall i \in \mathcal{P}_{max} \land \forall k, e_1, e_2 : c_e(e_1, e_2)>0 \land k \neq \texttt{Hange} \label{obj_k1} \\
 &\sum_{A,k,e} VC^{fs}_{k, e, A} M^h_{i,e_1}  \forall i \in A \land \forall e_1 \land k = \texttt{Hange} \label{obj_k2}\\
 &\sum_{c, k, e, A, \kappa} VC^{contr}_{c, A, \kappa, k, e} M^p_{c,i,e} V^{MWh}_{k,e}  \forall i \in \mathcal{P}_{max} \label{obj_k3}
 \end{align}
@@ -119,7 +119,8 @@ Need kolm sihifunktsiooni elementi on koodis kirjeldatud järgnevalt.
                              and fs_k(k, feedstock)
                              and not sameas(k, "Hange")),
      sum(p2$(enrichment_coef(p2, k, feedstock) > 0) ,
-      fs_mined(time_t, p2, feedstock, k))
+      fs_mined(time_t, p2, feedstock, k)
+    * (enrichment_coef(p2, k, feedstock)) 
     * fs_vc(k, feedstock, year))
  -
  sum((year, month, feedstock)$(y_m_t and fs_k("Hange", feedstock)),

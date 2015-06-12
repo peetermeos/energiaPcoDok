@@ -107,8 +107,8 @@ Olles välja kaevandanud parima koguse mäemassi, läheb karjääride ja kaevand
 Kaevandamise sihifunktsioon koosneb sisuliselt vaid kaevandamise muutuvkulu komponendist, mis on läbi korrutatud kaevandatud kütuse hulgaga. Sellele lisandub GV kütuse komponent, mis on analoogselt kaevandatud kütuse komponendiga korrutis lepingulise hinna ja kasutatud lepingu mahu korrutisega. Nagu alljärgnevast võrratusest \ref{obj_k2} on näha, eristab mudel hankekütust harilikust kaevandusest ja karjäärist. Mudel on sellisena ehitatud kaheastmelise stohhastilise optimeerimise võimalust arvestades, kus esimeses faasis otsustatakse ära perioodi kaevemahud omaenda kaevandustes jättes GV kütuse hankemahud varieeruma. Lisaks sellele pane tähele, et kuna hankelepingute hind on antud ENKPRIM poolt MWh kütuse kohta ning muud muutuvkulud on ühikuga EUR/t, siis on vajalik hankelepingute hinda teisendada kütteväärtusega läbi korrutamise näol.
 
 \begin{align}
-&\sum_{A,k,e_1,e_2} VC^{fs}_{k, e, A} M^k_{k,i,e_1, e_2} \cdot \alpha_e(e1, k, e2)  \forall i \in \mathcal{P}_{max} \land \forall k, e_1, e_2 : c_e(e_1, e_2)>0 \land k \neq \texttt{Hange} \label{obj_k1} \\
-&\sum_{A,k,e} VC^{fs}_{k, e, A} M^h_{i,e_1}  \forall i \in A \land \forall e_1 \land k = \texttt{Hange} \label{obj_k2}\\
+&\sum_{A,k,e_1,e_2} VC^{fs}_{k, e, A} M^k_{k,i,e_1, e_2} \cdot \alpha_e(e1, k, e2)  \forall i \in \mathcal{P}_{max} \land \forall k, e_1, e_2 : \alpha_e(e_1, e_2)>0 \land k \neq \texttt{Hange} \label{obj_k1} \\
+&\sum_{A,k,e} VC^{fs}_{k, e, A} M^h_{i,e}  \forall i \in A \land \forall e \land k = \texttt{Hange} \label{obj_k2}\\
 &\sum_{c, k, e, A, \kappa} VC^{contr}_{c, A, \kappa, k, e} M^p_{c,i,e} V^{MWh}_{k,e}  \forall i \in \mathcal{P}_{max} \label{obj_k3}
 \end{align}
 
@@ -711,6 +711,69 @@ $ifthen.two "%ht%" == "true"
 load_ht.up(time_t, slot, t_el) = max_load_ht(t_el);
 $endif.two
 \end{verbatim}
+
+\subsubsection{Minimaalsed tootmiskogused}
+Selleks, et tagada Eesti hinnapiirkonnas elektrihinna stabiilsust võtab mudel arvesse minimaalseid tootmiskoguseid, mida EE peaks \emph{peak} ja \emph{off-peak} perioodis tootma. Kuna mudeli päevapõhises resolutsioonis ei ole \emph{peak} ja \emph{off-peak}i olemas, siis on nende alguse- ja lõpuajad jõuga sisse kirjutatud. Sloti kaupa kirjutatud tootmispiirangut kirjeldab järgmine võrrand.
+
+\begin{equation}
+\sum_{t \in \mathcal{T}_e} E_{t,i}\geq \mathit{E}_{min}(i) \quad  \forall i \in \{\mathcal{P}, \mathcal{S} \} \label{min1}
+\end{equation}
+GAMSis kirjeldab minimaalseid tootmiskogused järgnev kood:
+
+\begin{verbatim}
+v_min_production_el(time_t, slot)$(time_t_s(time_t)
+                                   and day_type(time_t) = 0)..
+     sum((year, month, t_el)$y_m_t,
+         load_el(time_t, slot, t_el)
+       * slot_length(time_t, slot, t_el)
+        )
+  +
+* Penalty is needed for Bender's decomposition, switch off if 
+* subproblem is infeasible and calculate extreme ray
+  el_penalty(time_t) * modified_bender
+  =g=
+
+* For some specific model setups, such as demand curve 
+* calculations, this constraint needs to be turned off
+
+$ifthen.el "%el_free%" == "true"
+  0
+$else.el
+* Kalvi defines peak periods from 7am to 8pm (weekdays)
+* therefore production needs to be greater than
+* total minimum load across these hours.
+  min_production(time_t, slot)
+$endif.el
+;
+\end{verbatim}
+
+Iga ajaühiku (päev, slott) jaoks on eeltöötluses välja arvutatud minimaalne nõutav toodetava elektri kogus $\mathit{E}_{min}(i)$. Selle välja arvutamiseks võtab mudel sisendis antud \emph{peak} ja \emph{off-peak} kogused (antud kuude ja aastate kaupa) ning vastavalt päevade ja tundide jaotusele arvutab nende põhjal välja iga päeva ja sloti jaoks nõutava minimaalse tootmiskoguse. Koodis näeb see välja järgnevalt:
+
+\begin{verbatim}
+min_production(time_t, slot) =
+  sum((year, month, cal_time_sub, weekday, time_hour)$(y_m_t
+                             and cal_t(time_t, cal_time_sub)
+                             and wkday_number_cal_sub(cal_time_sub) = ord(weekday)
+                             and slot_hours(slot, weekday, time_hour)
+                             and (   ord(time_hour) < 7
+                                  or ord(time_hour) > 20
+                                  or day_type(time_t) > 0)
+                              ),
+         t_el_min_sum_offpeak(year, month))
+  +
+  sum((year, month, cal_time_sub, weekday, time_hour)$(y_m_t
+                             and cal_t(time_t, cal_time_sub)
+                             and wkday_number_cal_sub(cal_time_sub) = ord(weekday)
+                             and slot_hours(slot, weekday, time_hour)
+                             and ord(time_hour) > 6
+                             and ord(time_hour) < 21
+                             and day_type(time_t) = 0
+                             ),
+       t_el_min_sum_peak(year, month))
+;
+\end{verbatim}
+Nagu koodist on näha, on praegu slottide algus ja lõpukellaajad kirjutatud jõuga sisse (\emph{peak} on tööpäevadel vahemkus kell 0700 - 2100).
+
 
 \subsubsection{Tootmisüksuse energeetiline tasakaal, uttegaas}
 Tootmisüksuse kateldesse saab siseneda primaarenergia kahel moel, läbi punkri ja kütuse etteande ning uttegaasi näol. Seega ülal modelleeritud katlast väljuv soojushulk $Q_k$ on avalduv siseneva primaarenergia koguse $Q$ ning uttegaasi energeetilise koguse $U$ näol.

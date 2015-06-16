@@ -13,7 +13,7 @@
 
 \author{Peeter Meos\\Taaniel Uleksin}
 \title{Põlevkivi väärtusketi optimeerimismudel \\ 
-PCO Versioon 1.5\\
+PCO Versioon 1.6\\
 Eesti Energia AS}
 \makeindex
 \begin{document}
@@ -136,21 +136,17 @@ Need kolm sihifunktsiooni elementi on koodis kirjeldatud järgnevalt.
 \end{verbatim}
 Koodis on vajalik tähele panna, et kuna karjääri tootestamine toimub primaarenergiast (kaevis) teise primaarenergiasse (nt. 8.4 MJ/kg kivi), siis on vajalik kahekordne summeerimine üle primaarenergiate hulga $\mathcal{E}$, koodis on tehtud üle indeksi \texttt{feedstock} ja selle \emph{aliase} \texttt{p2}. Sisendis on hankelepingute hinnad antud primaarenergiale (st. ühikuks on EUR/MWh).
 
-\subsection{Karjäärid}
-% Siia lisada muutuvkulude arvutamise kirjeldus
-Karjäärides, kus ei ole rikastusvabrikut, ütleb mudel, et 1 tonnist 7.0 MJ/kg mäemassist on võimalik toota 770 kg 8.4 MJ/kg kütteväärtusega energeetilist põlevkivi (st. koefitsent 0.77) ja/või 885 kg 7.7 MJ/kg madala kütteväärtusega toodet või 1 tonn 7.0 MJ/kg mäemassi. Ülejäänu loeme aheraineks ja ignoreerime seda kui mitte-tootestatavat materjali. Selgituseks vaata joonist \ref{joon1}.
+\subsection{Üldine kaevevõimekuste kirjeldus}
+Kõik kaevevõimekuse ja kaevemahtudega seotud parameetrid ja muutujad on optimeerimises massipõhised ($t$) ja kõik muutuvkulud on modelleeritud ühikuga $EUR/t$. Kaevevõimekus karjääris ja kaevanduses on määratud maksimaalse kaevemahuga kuus $\mathit{M}_{max}$ ja koodis \texttt{max\_mining\_cap}. Kuupõhised kaevevõimekused arvutatakse piirangutes ümber vastavale ajaühikule (kas kuu või päev). Ehk siis eeltöötluses arvutame välja vastava kaevanduse tööpäevade arvu konkreetses kuus ja jagame kuise kaevevõimekuse selle päevade arvuga.
 
-\begin{figure}
-\include{karjaari_pilt}
-\caption{Mäemassi tootestamine karjääris. NB! Kaevandustes tootestamine on modelleritud erinevalt.
-\label{joon1}}
-\end{figure}
+Kuna kaevandustes ja karjäärides on kasutusel erinevad kaeveprotsessid, siis rikastuse tõttu tuleb kaevandus(t)es läbida veel üks piirangutega sätitud samm. Selletõttu tootestatakse karjääride toodang otse (muutuja $M^k$) ning kaevanduste toodang läbi rikastuse. Rikastusse sisenev mäemass ($M_{i,k}$, koodis \texttt{raw\_shale} jaotatakse veel komponentideks ning alles nende kaudu saab muutuja $M^k$ endale väärtuse. Nii kaevandused kui ka karjäärid peavad oma maksimaalse kaevevõimekusega mahtuma alltoodud piirangusse.
 
-Seega väljaminevate toodete kogus tonnides peab kokku summeeruma järgne\-valt
-
-\begin{equation}
-\sum_{e \in \mathcal{E}} \frac{M^k_{e} [t]}{\mathit{\alpha}_e [\%]} \le \mathcal{M}_{max} [t]
-\end{equation}
+\begin{align}
+\sum_{e_1,e_2} M^k_{k,i,e_1, e_2} 
++
+M_{i,k}
+\le \mathcal{M}_{max} \quad \forall k,i
+\end{align}
 
 \begin{verbatim}
 v_k_fs_mined(time_t, k, feedstock)$(time_t_s(time_t)
@@ -168,6 +164,45 @@ v_k_fs_mined(time_t, k, feedstock)$(time_t_s(time_t)
    )$(sum((year, month)$y_m_t, monthly_workdays(year, month, k) > 0))
 ;
 \end{verbatim}
+
+Samasugune piirang kehtib ka väljast hangitavale primaarenergiale. Sisuline vahe on selles, et GV primaarenergia on etteantud hankelepingutega (\texttt{contract}), mitte maksimaalse kaevevõimekusega nagu ülal kirjeldatud.
+
+\begin{verbatim}
+v_fs_purchase(serial, time_t, k, feedstock)$(time_t_s(time_t)
+   )..
+  fs_purchase(serial, time_t, k, feedstock)
+  =l=
+  sum((year, month)$(y_m_t) ,
+      contract(serial, year, month, k, feedstock, "kogus")
+
+* Calorific values in purchase contracts and in cv() table differ slightly
+* Since purchased fuel is delivered to the gate of the production unit and
+* never stored, then the only inaccuracy is in fuel supply costs, which
+* is not significant enough to worry too much about.
+  / (days_in_month_m(year, month))
+  / 24
+  * sum(slot, smax(t_mk, slot_length_orig(time_t, slot, t_mk)))
+  )
+;
+\end{verbatim}
+
+Järgnevad peatükid kirjeldavad karjääride ja kaevanduste protsesse detailsemalt.
+
+\subsection{Karjäärid}
+% Siia lisada muutuvkulude arvutamise kirjeldus
+Karjäärides, kus ei ole rikastusvabrikut, ütleb mudel, et 1 tonnist 7.0 MJ/kg mäemassist on võimalik toota 770 kg 8.4 MJ/kg kütteväärtusega energeetilist põlevkivi (st. koefitsent 0.77) ja/või 885 kg 7.7 MJ/kg madala kütteväärtusega toodet või 1 tonn 7.0 MJ/kg mäemassi. Ülejäänu loeme aheraineks ja ignoreerime seda kui mitte-tootestatavat materjali. Selgituseks vaata joonist \ref{joon1}.
+
+\begin{figure}
+\include{karjaari_pilt}
+\caption{Mäemassi tootestamine karjääris. NB! Kaevandustes tootestamine on modelleritud erinevalt.
+\label{joon1}}
+\end{figure}
+
+Seega väljaminevate toodete kogus tonnides peab kokku summeeruma järgne\-valt
+
+\begin{equation}
+\sum_{e \in \mathcal{E}} \frac{M^k_{e} [t]}{\mathit{\alpha}_e [\%]} \le \mathcal{M}_{max} [t]
+\end{equation}
 
 See võrratus peab paika pidama igal planeeritaval päeval. Ülalmainitud koefitsenti tähistatakse siinses kirjelduses $\mathit{\alpha}_e$ ning koodis \texttt{enrichment\_coef} (konstant, antud sisendparameetrina).
 
@@ -598,10 +633,10 @@ Elektri ja soojuse tootmine on mudeli sihifunktsioonis igas ajaperioodis $i$ jä
 \end{align}
 
 \subsubsection{Primaarenergia segamine kütusesegudeks}
-Primaarenergia segamise juures kütusesegudeks tuleb arvesse võtta konkreetse kütusesegu maksimaalselt lubatud osakaalu tootmisüksusesse sisenevas primaarenergias. 
+Primaarenergia segamise juures kütusesegudeks tuleb arvesse võtta konkreetse kütusesegu maksimaalselt lubatud osakaalu $\rho$, koodis \texttt{max\_ratio}, tootmisüksusesse sisenevas primaarenergias. 
 \begin{align}
 \bigg[\sum_{liin} F^{tootmisse}_{e,liin} + \sum_{l_t} F^{laost}_{e,l_t}\bigg]\cdot V_e &= \sum_{k,l} Q_{t,i,e}\cdot S_l(i) &\forall t,i,e \label{vs3} \\
-Q_{t,i,e} &\leq \sum_e \sum_{k,l} Q_{t,i,e} \cdot p_{e,t} &\forall t,i,e \label{vs1}
+Q_{t,i,e} &\leq \sum_e \sum_{k,l} Q_{t,i,e} \cdot \rho_{e,t} &\forall t,i,e \label{vs1}
 \end{align}
 Võrrand \eqref{vs3} nõuab, et kõikidest ladudest ja logistikaliinidelt tootmisüksusesse sisenev primaarenergia hulgas vastavalt $M^{ladu}_e$ ja $M^{logistika}_e$ tonnides kütteväärtu\-sega $V_e$ oleks võrdne tootmisüksusesse siseneva primaarenergia hulgaga $Q^{k,l}_e$ üle kõikide lubja ja killustiku indeksite $k$ ja $l$.
 Võrratus \eqref{vs1} tagab, et primaarenergiat $e$ ei segataks tootmisüksuse $t$ kütusesegu\-sse ajaperioodis $i$  rohkem, kui on konkreetse primaarenergia maksimaalne lubatud osakaal antud plokki sisenevast primaarenergiast. Näiteks ei tohi ületada biomassi osakaal BEJ11 sisenevast primaarenergiast ületada 50\%. Kuna see peab kehtima sõltumata lubja ja killustiku lisamisest, peame me summeerima üle lubja $l$ ja killustiku $k$ indeksite.
@@ -643,7 +678,7 @@ Samas selline modelleerimisviis, kuigi täpne, on arvutuslikult väga kallis, ku
 \begin{align}
 \eta &= \frac{E_t}{a_t \cdot Q_t - b_t} \label{vktl1}
 \end{align}
-See ülaltoodud võrrand on oma olemuselt mittelineaarne ning kasutegurile vajaliku kumera kujuga, kuid mudelis kirjeldatav lineaarselt. Tingimuseks, et see lähendus toimiks, on tarvis valida konstandid $a_t$ ning $b_t$ selliselt, et neist tulenev kõver oleks võimalikult sarnane tootmisüksuse vastava kasuteguri kõveraga. Kuna $E_t$ ja $Q_t$ paarid on sisendis ette antud, tuleb meil valida kaks konstanti ühe võrrandi (\ref{vktl1}) abil, võime ühe konstantidest vabalt (mõistuse piires) valida ning teist sobitada. Mudelis valitakse konstant $a_t$ maksimaalse kasuteguri modifikatsioonina $a_t = \eta_{max} + 0.01$. Positiivse konstandi liitmine on vajalik $b_t$ negatiivse mõju kompenseerimiseks.   Nüüd on $b_t$ võimalik valida sobitades kasuteguri kõverat võrrandiga. Praegu on see tehtud mudeliväliselt R koodis, kuid edaspidi tuleks see automatiseerida mudeli eeltöötlusse.
+See ülaltoodud võrrand on oma olemuselt mittelineaarne ning kasutegurile vajaliku kumera kujuga, kuid mudelis kirjeldatav lineaarselt. Tingimuseks, et see lähendus toimiks, on tarvis valida konstandid $a_t$ ning $b_t$ selliselt, et neist tulenev kõver oleks võimalikult sarnane tootmisüksuse vastava kasuteguri kõveraga. Kuna $E_t$ ja $Q_t$ paarid on sisendis ette antud, tuleb meil valida kaks konstanti ühe võrrandi (\ref{vktl1}) abil, võime ühe konstantidest vabalt (mõistuse piires) valida ning teist sobitada. Mudelis valitakse konstant $a_t$ maksimaalse kasuteguri modifikatsioonina $a_t = \eta_{max} + 0.01$. Positiivse konstandi liitmine on vajalik $b_t$ negatiivse mõju kompenseerimiseks.   Nüüd on $b_t$, koodis \texttt{turbine\_loss} ehk omatarve, võimalik valida sobitades kasuteguri kõverat võrrandiga. Praegu on see tehtud mudeliväliselt R koodis, kuid edaspidi tuleks see automatiseerida mudeli eeltöötlusse. Neljanda punkti kasutegurite kõverast võtab kood praegu sellepärast, et kasutada oma hinnangute aluseks parimat enneantud kasutegurit (praegu on sisendis antud kasuteguri kõver ette nelja punktina).
 Kasuteguri kasutus on realiseeritud läbi makrode ja kirjeldatud järgneva kooditükiga:
 \begin{verbatim}
 * Net power load of a turbine (ie output power)
@@ -1146,7 +1181,8 @@ v_unit_commitment(time_t, slot, t_el)$(time_t_s(time_t))..
 
 \end{verbatim}
 
-Lisaks sellele on \emph{unit commitment} staatuse võrrandiga otseselt seotud käivitus\-kulud. Võrratuste mõte on sundida ajaperioodis tehtavat käivita\-mise otsust tähistav binaarmuutuja $k_{t,i} \in \{0,1\}$ suuremaks kui null juhul, kui tootmisüksuse $t$ koormust on optimaalne tõsta ajaperioodis $i$ nullist kõrgemale.
+Lisaks sellele on \emph{unit commitment} staatuse võrrandiga otseselt seotud käi\-vitus\-kulud. Võrratuste mõte on sundida ajaperioodis tehtavat käivita\-mise otsust tähistav binaarmuutuja $k_{t,i} \in \{0,1\}$ suuremaks kui null juhul, kui tootmisüksuse $t$ koormust on optimaalne tõsta ajaperioodis $i$ nullist kõrgemale. Pane tähele, et alltoodud võrratused on ehitatud ahelasse, st. järgmise ajaühiku võrratus on seotud eelmise ajaühiku võrratusega läbi tootmisüksuse staatust tähistava muutuja $k^\alpha$.
+
 \begin{align}
 k^\alpha_{t,i} \leq k^{start}_{t,i} + k^\alpha_{t-1,i} &\forall t,i
 \end{align}

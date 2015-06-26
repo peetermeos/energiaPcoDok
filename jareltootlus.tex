@@ -1,13 +1,100 @@
 % Siia tuleb järeltöötluse tekst
-Optimeerimismudeli järeltöötluse mõte on arvutada mudeli väljund ümber lõppkasutajale vajalikeks agregeeritud ja mugavamateks vaadeteks. Näiteks selle asemel, et ise mitut suhteliselt suurt pivot  tabelit kokku liites leida vajalik tulemus (nt. slotikoormuste asemel on vaja kuiseid toodangunumbreid), saab need arvutused juba GAMSis suhteliselt lihtsa vaevaga ette ära teha. Lisaks sellele vähendab see andmete laadimise vajadust Excelisse, mis drastiliselt vähendab meie Exceli failide suurust.   Kui optimeerimismudeli väljundi GDX fail on harilikult üle 1 GB suur, siis agregeeritud Exceli väljund on harilikult ca 20 MB. Järgnev on üldine jaotus järeltöötluses kokku pandud vaadetest:
+Optimeerimismudeli järeltöötluse mõte on arvutada mudeli väljund ümber lõpp\-kasutajale vajalikeks agregeeritud ja mugavamateks vaadeteks. Näiteks selle asemel, et ise mitut suhteliselt suurt pivot  tabelit kokku liites leida vajalik tulemus (nt. slotikoormuste asemel on vaja kuiseid toodangunumbreid), saab need arvutused juba GAMSis suhteliselt lihtsa vaevaga ette ära teha. Lisaks sellele vähendab see andmete laadimise vajadust Excelisse, mis drastiliselt vähendab meie Exceli failide suurust.   Kui optimeerimismudeli väljundi GDX fail on harilikult üle 1 GB suur, siis agregeeritud Exceli väljund on harilikult ca 20 MB. Järgnev on üldine jaotus järeltöötluses kokku pandud vaadetest:
 \begin{itemize}
 \item Keskmised kasutegurid
+\begin{verbatim}
+avg_efficiency_day(sim, time_t, t_el)
+avg_efficiency_month(sim, year, month, t_el)
+avg_efficiency_year(sim, year, t_el)
+avg_special_consumption_month(sim, year, month, t_el)
+\end{verbatim}
+
 \item Keskmised eriheitmed
+\begin{verbatim}
+avg_specific_emission_day(sim, time_t, t, em, product)
+avg_specific_emission_month(sim, year, month, t, em, product)
+avg_specific_emission_year(sim, year, t, em, product)
+avg_specific_emission_tech_year(sim, year, tech, t, em, product)
+\end{verbatim}
+
 \item Heitmed
+\begin{verbatim}
+emission_slot(sim, time_t, slot, t, product, em, unit) 
+emission_day(sim, time_t, t, product, em, unit)
+emission_month(sim, year, quarter, month, t, product, em, unit)
+\end{verbatim}
+
 \item Primaarenergia kaeveplaan ja hankeplaan
+\begin{verbatim}
+mine_production_day(sim, time_t, k, feedstock, unit)
+mine_production_month(sim, year, quarter, month, k, feedstock, unit)
+enrichment_month(year, month, k_enrichment, sort, unit)
+\end{verbatim}
+
+\item Kütuste logistika ja ladustamine (päev, kuu)
+\begin{verbatim}
+storage_month(sim, year, quarter, month, storage, k, feedstock, unit)
+storage_agg_month(sim, year, quarter, month, storage_agg, k, feedstock, unit)
+k_delivery_day(sim, time_t, k, feedstock, l, unit)
+k_delivery_month(sim, year, quarter, month, k, feedstock, l, unit)
+logistics_day(sim, time_t, route, unit)
+logistics_month(sim, year, quarter, month, route, unit)
+\end{verbatim}
+
+\item Tootmisvõimekus (slott, päev, kuu)
+\begin{verbatim}
+t_productioncapacity_slot(sim, time_t, slot, t, product, unit) 
+t_productioncapacity_day(sim, time_t, t, product, unit) 
+t_productioncapacity_month(sim, year, quarter, month, t, product, unit)
+\end{verbatim}
+
 \item Kütuste kasutus (slott, päev, kuu, aasta)
+\begin{verbatim}
+fuel_consumption_slot(sim, time_t, slot, t_ol, "oil", k, feedstock, unit)
+fuel_consumption_day(sim, year, month, day, time_t, t, product, k, feedstock, unit)
+fuel_consumption_month(sim, year, quarter, month, t, product, k, feedstock, unit)
+fuel_consumption_year(sim, year, t, product, k, feedstock, unit)
+retortgas_usage_slot(sim, time_t, slot, t_el, unit)
+retortgas_usage_day(sim, time_t, t_el, unit)
+retortgas_usage_month(sim, year, quarter, month, t_el, unit)
+\end{verbatim}
+
 \item Toodang (slott, päev, kuu, aasta)
+\begin{verbatim}
+t_production_slot(sim, time_t, slot, t, product) 
+t_production_day(sim, time_t, t, product) 
+t_production_month(sim, year, quarter, month, t, product)
+t_production_tech_month(sim, year, quarter, month, tech, t, product)
+t_production_year(sim, year, t, product) 
+ol_production_day(sim, time_t, t_ol, ol_product)
+ol_production_month(sim, year, quarter, month, t_ol, ol_product)
+\end{verbatim}
+
 \item Müügitulud
+\begin{verbatim}
+t_sales_slot(sim, time_t, slot, t, product)
+t_sales_day(sim, time_t, t, product) 
+t_sales_month(sim, year, quarter, month, t, product)
+\end{verbatim}
+
 \item Muutuvkasum (slott, päev, kuu, aasta)
 \item Muutuvkulud (slott, päev, kuu, aasta)
+\begin{verbatim}
+t_varcost_fs_slot(sim, time_t, slot, t, k, feedstock, product, vc)
+t_varcost_fs_day(sim, time_t, t, k, feedstock, product, vc)
+t_varcost_fs_month(sim, year, quarter, month, t, k, feedstock, product, vc)
+t_varcost_fs_year(sim, year, t, k, feedstock, product, vc)
+t_varcost_fs_perunit_year(sim, year, t, k, feedstock, product, vc)
+t_varcost_slot(sim, time_t, slot, t, product, vc)
+t_varcost_day(sim, time_t, t, product, vc) 
+t_varcost_month(sim, year, quarter, month, t, product, vc)
+t_varcost_perunit_slot(sim, time_t, slot, t, product, vc)
+t_varcost_perunit_day(sim, time_t, t, product, vc)
+t_varcost_perunit_month(sim, year, month, t, product, vc)
+t_varcost_perunit_quarter(sim, year, quarter, t, product, vc)
+t_varcost_perunit_year(sim, year, t, product, vc)
+t_varcost_perunit_NEJ_month(sim, year, month, product, vc)
+t_varcost_perunit_NEJ_quarter(sim, year, quarter, product, vc)
+\end{verbatim}
+
 \end{itemize}

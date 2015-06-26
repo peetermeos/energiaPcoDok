@@ -61,6 +61,8 @@ Optimeerimismudelit on võimalik kasutada erinevates seadetes, lülitades välja
 
 Formulatsioon on jaotatud GAMS koodifailide vahele, eraldades eel- ja järel\-töötluse, struktuurid, sihifunktsiooni, piirangud ja lisaalgoritmid. Failid ja nende sisu on kirjeldatud tabelis lisas \ref{app:failid}. Koodi loetavuse ja lühiduse huvides on võimalikult palju korduvaid koodielemente kirjutatud makrodeks mis on ära toodud selle kirjatüki lisas \ref{app:makrod}
 
+Lisaks formulatsioonile on PCOle kirjutatud sisendandmete eeltöötlus ja väljundandmete järeltöötlus. Eeltöötluse ülesanne on muuta sisendandmed lõpp\-kasutajale mugavamaks. Näiteks remondigraafikud, mis mudelis on esitatud binaarsete parameetritena ühe päeva kaupa on sisendis toodud algus- ja lõpp\-kuu\-päevadega, mis muudab vastava sisendtabeli kasutaja jaoks oluliselt kompaktsemaks. Samalaadselt eeltöötlusele on järeltöötluse mõtteks kasutajamugavus - päeva- ja tunnipõhiste tootmisplaani andmete agregeerimine kuudesse, kvartalitesse ja aastatesse. Põhimõtteliselt saaks seda teha ka Excelis, aga sellisel juhul oleks juba niigi suured Exceli failid veelgi suuremad ja kohmakamad. Eeltöötlus on kirjeldatud selle dokumentatsiooni lõpus peatükis \ref{sec:eeltootlus} ning järeltöötlus vastavalt \ref{sec:jareltootlus} peatükis.
+
 \section{Üldised elemendid}
 \subsection{Aeg ja kalender}
 Mudel töötab praegu suuremas osas päeva täpsusega mudelina.
@@ -1469,11 +1471,18 @@ muutujaga $\Theta$ ning esimese astme ülesandes seega lahendada
 \end{equation}
 Samal ajal seades muutujale $\Theta$ teise astme ülesande lahenduste kaudu lisapiiranguid, mis lõpuks konvergeeruvad üleüldisesse globaalsesse optimumi. Benders'i tükelduse ebameeldivam külg on see, et optimumi saavutamiseks tuleb algoritmi läbida umbkaudu 15 iteratsiooni, mis kohati võtab kauem aega kui puhta deterministiliku ekvivalendi lahendamine, aga vastutasuks annab meil üldist optimumi tagavad esimese astme ülesande otsustumuutujate vektori.
 
+
+% Lisada eeltöötluse kirjeldus
+\section{Eeltöötlus}
+\label{sec:eeltootlus}
+% Koodis on vaja iga võrrand refereerida siin kirjeldatud võrranditega.
+\include{eeltootlus}
+
 % Lisada järeltöötluse kirjeldus
 \section{Järeltöötlus}
 \label{sec:jareltootlus}
 % Koodis on vaja iga võrrand refereerida siin kirjeldatud võrranditega.
-\include{jareltootlus}
+\input{jareltootlus}
 
 \appendix
 \include{parameetrid}
